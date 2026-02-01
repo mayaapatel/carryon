@@ -13,65 +13,44 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
-export default function HomeScreen() {
+export default function Dashboard() {
+  // ✅ Local images (NO links)
+  // Put these files in: carryon/assets/
+  const MAIN_TRIP_IMAGE = require("../assets/images/main-trip.jpg"); // <- your big Tokyo card image
+  // const TOKYO_LABEL_ICON = require("../assets/images/location-icon.png"); // <- your small icon (optional)
+
   const pastTrips = [
-    {
-      id: "hawaii",
-      label: "Hawaii",
-      img: "https://cdn.prod.website-files.com/656249ae134c5c08c0a091d3/6569557f8d994c8015080312_zetong-li-hiIaDHN5kMY-unsplash-1024x683.jpeg",
-    },
-    {
-      id: "dc",
-      label: "D.C.",
-      img: "https://www.trolleytours.com/wp-content/uploads/2016/06/white-house-visitors-center-480x270.jpg",
-    },
+    { id: "hawaii", label: "Hawaii", img: require("../assets/images/past-hawaii.jpeg") },
+    { id: "dc", label: "D.C.", img: require("../assets/images/past-dc.jpg") },
     {
       id: "california",
       label: "California",
-      img: "https://upload.wikimedia.org/wikipedia/commons/b/bf/Golden_Gate_Bridge_as_seen_from_Battery_East.jpg",
+      img: require("../assets/images/past-california.jpg"),
     },
-    {
-      id: "peru",
-      label: "Peru",
-      img: "https://upload.wikimedia.org/wikipedia/commons/b/bb/Machu_Picchu%2C_2023_%28012%29.jpg",
-    },
+    { id: "peru", label: "Peru", img: require("../assets/images/past-peru.jpg") },
+
+    // If you add more later, keep going like:
+    // { id: "nyc", label: "NYC", img: require("../assets/past-nyc.jpg") },
+    // { id: "india", label: "India", img: require("../assets/past-india.jpg") },
+    // { id: "london", label: "London", img: require("../assets/past-london.jpg") },
   ];
 
-  const onMainTripPress = () => {
-    // TODO: navigate to trip details
-    console.log("Main trip pressed");
-  };
-
-  const onPastTripsArrowPress = () => {
-    // TODO: open Past Trips page / modal
-    console.log("Past trips arrow pressed");
-  };
-
-  const onTripCirclePress = (trip) => {
-    // TODO: open that trip
-    console.log("Trip circle pressed:", trip.label);
-  };
-
-  const onCreateTripPress = () => {
-    // TODO: navigate to create trip flow
-    console.log("Create trip pressed");
-  };
-
-  const onBackPress = () => {
-    // TODO: navigation.goBack()
-    console.log("Back pressed");
-  };
+  const onMainTripPress = () => console.log("Main trip pressed");
+  const onTokyoLabelPress = () => console.log("Tokyo label pressed");
+  const onPastTripsArrowPress = () => console.log("Past trips arrow pressed");
+  const onPastTripPress = (trip) => console.log("Past trip pressed:", trip.label);
+  const onCreateTripPress = () => console.log("Create trip pressed");
+  const onBackPress = () => console.log("Back pressed");
 
   return (
     <SafeAreaView style={styles.safe}>
-      {/* Settings/Status bar */}
       <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
 
       <ScrollView
         contentContainerStyle={styles.scroll}
         showsVerticalScrollIndicator={false}
       >
-        {/* Top row: back button (like your mock) */}
+        {/* Top row (settings bar area is the OS bar; this is your back button row) */}
         <View style={styles.topRow}>
           <TouchableOpacity
             onPress={onBackPress}
@@ -88,23 +67,25 @@ export default function HomeScreen() {
           <Text style={styles.subtitle}>PLAN. PACK. GO.</Text>
         </View>
 
-        {/* Main trip button card */}
+        {/* Main trip card button */}
         <TouchableOpacity
           onPress={onMainTripPress}
           style={styles.heroButton}
-          activeOpacity={0.85}
+          activeOpacity={0.9}
         >
           <ImageBackground
-            source={{
-              uri: "https://images.unsplash.com/photo-1526481280695-3c687fd5432c?auto=format&fit=crop&w=1200&q=75",
-            }}
+            source={MAIN_TRIP_IMAGE}
             style={styles.heroImage}
             imageStyle={styles.heroImageRadius}
           >
-            {/* Bottom-left overlay label */}
-            <View style={styles.heroLabelWrap}>
-              <Text style={styles.heroLabel}>Tokyo, Japan</Text>
-            </View>
+            {/* Tokyo label button (with local icon image) */}
+            <TouchableOpacity
+              onPress={onTokyoLabelPress}
+              activeOpacity={0.85}
+              style={styles.heroLabelButton}
+            >
+              <Text style={styles.heroLabelText}>Tokyo, Japan</Text>
+            </TouchableOpacity>
           </ImageBackground>
         </TouchableOpacity>
 
@@ -121,21 +102,21 @@ export default function HomeScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Trip circles row */}
+        {/* Past Trips circles (scrollable, shows max 7) */}
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.circlesRow}
         >
-          {pastTrips.map((t) => (
+          {pastTrips.slice(0, 7).map((t) => (
             <TouchableOpacity
               key={t.id}
-              onPress={() => onTripCirclePress(t)}
+              onPress={() => onPastTripPress(t)}
               style={styles.tripCircleBtn}
-              activeOpacity={0.8}
+              activeOpacity={0.85}
             >
               <View style={styles.circleShadowWrap}>
-                <Image source={{ uri: t.img }} style={styles.tripCircleImg} />
+                <Image source={t.img} style={styles.tripCircleImg} />
               </View>
               <Text style={styles.tripCircleLabel} numberOfLines={1}>
                 {t.label}
@@ -153,7 +134,6 @@ export default function HomeScreen() {
           <Text style={styles.createBtnText}>CREATE TRIP!</Text>
         </TouchableOpacity>
 
-        {/* bottom padding so it feels like iPhone spacing */}
         <View style={{ height: 24 }} />
       </ScrollView>
     </SafeAreaView>
@@ -216,16 +196,32 @@ const styles = StyleSheet.create({
   heroImageRadius: {
     borderRadius: 14,
   },
-  heroLabelWrap: {
-    padding: 10,
+
+  // Tokyo label "image button behind text"
+  heroLabelButton: {
+    position: "absolute",
+    left: 10,
+    bottom: 10,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 10,
+    backgroundColor: "rgba(255,255,255,0.75)",
+    borderWidth: 1,
+    borderColor: "rgba(17,24,39,0.12)",
   },
-  heroLabel: {
+  heroLabelIcon: {
+    width: 18,
+    height: 18,
+    opacity: 0.9,
+    resizeMode: "contain",
+  },
+  heroLabelText: {
     fontSize: 16,
     fontWeight: "800",
-    color: "rgba(17,24,39,0.75)",
-    textShadowColor: "rgba(255,255,255,0.55)",
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
+    color: "rgba(17,24,39,0.85)",
   },
 
   pastHeader: {
@@ -245,9 +241,9 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#ffffff",
     borderWidth: 1,
     borderColor: "rgba(17,24,39,0.15)",
+    backgroundColor: "#fff",
   },
 
   circlesRow: {
@@ -271,11 +267,13 @@ const styles = StyleSheet.create({
     elevation: 4,
     alignItems: "center",
     justifyContent: "center",
+    overflow: "hidden",
   },
   tripCircleImg: {
-    width: 58,
-    height: 58,
-    borderRadius: 29,
+    width: 62,
+    height: 62,
+    borderRadius: 31,
+    resizeMode: "cover",
   },
   tripCircleLabel: {
     marginTop: 8,
