@@ -1,6 +1,3 @@
-// HomeScreen.jsx (Expo / React Native)
-// Drop this in: screens/HomeScreen.jsx (or app/index.jsx if you're using Expo Router)
-
 import React from "react";
 import {
   View,
@@ -21,22 +18,22 @@ export default function HomeScreen() {
     {
       id: "hawaii",
       label: "Hawaii",
-      img: "https://images.unsplash.com/photo-1507878866276-a947ef722fee?auto=format&fit=crop&w=600&q=70",
+      img: "https://cdn.prod.website-files.com/656249ae134c5c08c0a091d3/6569557f8d994c8015080312_zetong-li-hiIaDHN5kMY-unsplash-1024x683.jpeg",
     },
     {
       id: "dc",
       label: "D.C.",
-      img: "https://images.unsplash.com/photo-1542574271-7f3b92e6c3ad?auto=format&fit=crop&w=600&q=70",
+      img: "https://www.trolleytours.com/wp-content/uploads/2016/06/white-house-visitors-center-480x270.jpg",
     },
     {
       id: "california",
       label: "California",
-      img: "https://images.unsplash.com/photo-1501594907352-04cda38ebc29?auto=format&fit=crop&w=600&q=70",
+      img: "https://upload.wikimedia.org/wikipedia/commons/b/bf/Golden_Gate_Bridge_as_seen_from_Battery_East.jpg",
     },
     {
       id: "peru",
       label: "Peru",
-      img: "https://images.unsplash.com/photo-1526392060635-9d6019884377?auto=format&fit=crop&w=600&q=70",
+      img: "https://upload.wikimedia.org/wikipedia/commons/b/bb/Machu_Picchu%2C_2023_%28012%29.jpg",
     },
   ];
 
