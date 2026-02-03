@@ -1,26 +1,32 @@
+// screens/Dashboard.jsx
 import React from "react";
+import { useRouter } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
 import {
-  View,
-  Text,
-  StyleSheet,
-  SafeAreaView,
-  StatusBar,
-  TouchableOpacity,
   Image,
   ImageBackground,
-  ScrollView,
   Platform,
+  SafeAreaView,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
 
 export default function Dashboard() {
+  const router = useRouter();
+
   // ✅ Local images (NO links)
-  // Put these files in: carryon/assets/
-  const MAIN_TRIP_IMAGE = require("../assets/images/main-trip.jpg"); // <- your big Tokyo card image
-  // const TOKYO_LABEL_ICON = require("../assets/images/location-icon.png"); // <- your small icon (optional)
+  const MAIN_TRIP_IMAGE = require("../assets/images/main-trip.jpg"); // your big Tokyo card image
 
   const pastTrips = [
-    { id: "hawaii", label: "Hawaii", img: require("../assets/images/past-hawaii.jpeg") },
+    {
+      id: "hawaii",
+      label: "Hawaii",
+      img: require("../assets/images/past-hawaii.jpeg"),
+    },
     { id: "dc", label: "D.C.", img: require("../assets/images/past-dc.jpg") },
     {
       id: "california",
@@ -28,35 +34,28 @@ export default function Dashboard() {
       img: require("../assets/images/past-california.jpg"),
     },
     { id: "peru", label: "Peru", img: require("../assets/images/past-peru.jpg") },
-
-    // If you add more later, keep going like:
-    // { id: "nyc", label: "NYC", img: require("../assets/past-nyc.jpg") },
-    // { id: "india", label: "India", img: require("../assets/past-india.jpg") },
-    // { id: "london", label: "London", img: require("../assets/past-london.jpg") },
   ];
 
   const onMainTripPress = () => console.log("Main trip pressed");
   const onTokyoLabelPress = () => console.log("Tokyo label pressed");
-  const onPastTripsArrowPress = () => console.log("Past trips arrow pressed");
+
+  // ✅ Navigate to Travel History
+  const onPastTripsArrowPress = () => {
+    router.push("/travel-history");
+  };
+
   const onPastTripPress = (trip) => console.log("Past trip pressed:", trip.label);
   const onCreateTripPress = () => console.log("Create trip pressed");
-  const onBackPress = () => console.log("Back pressed");
+  const onBackPress = () => router.back();
 
   return (
     <SafeAreaView style={styles.safe}>
       <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
 
-      <ScrollView
-        contentContainerStyle={styles.scroll}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Top row (settings bar area is the OS bar; this is your back button row) */}
+      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+        {/* Top row */}
         <View style={styles.topRow}>
-          <TouchableOpacity
-            onPress={onBackPress}
-            style={styles.iconButton}
-            activeOpacity={0.7}
-          >
+          <TouchableOpacity onPress={onBackPress} style={styles.iconButton} activeOpacity={0.7}>
             <Ionicons name="chevron-back" size={24} color="#111827" />
           </TouchableOpacity>
         </View>
@@ -68,17 +67,13 @@ export default function Dashboard() {
         </View>
 
         {/* Main trip card button */}
-        <TouchableOpacity
-          onPress={onMainTripPress}
-          style={styles.heroButton}
-          activeOpacity={0.9}
-        >
+        <TouchableOpacity onPress={onMainTripPress} style={styles.heroButton} activeOpacity={0.9}>
           <ImageBackground
             source={MAIN_TRIP_IMAGE}
             style={styles.heroImage}
             imageStyle={styles.heroImageRadius}
           >
-            {/* Tokyo label button (with local icon image) */}
+            {/* Tokyo label button */}
             <TouchableOpacity
               onPress={onTokyoLabelPress}
               activeOpacity={0.85}
@@ -103,11 +98,7 @@ export default function Dashboard() {
         </View>
 
         {/* Past Trips circles (scrollable, shows max 7) */}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.circlesRow}
-        >
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.circlesRow}>
           {pastTrips.slice(0, 7).map((t) => (
             <TouchableOpacity
               key={t.id}
@@ -126,11 +117,7 @@ export default function Dashboard() {
         </ScrollView>
 
         {/* Create Trip button */}
-        <TouchableOpacity
-          onPress={onCreateTripPress}
-          style={styles.createBtn}
-          activeOpacity={0.9}
-        >
+        <TouchableOpacity onPress={onCreateTripPress} style={styles.createBtn} activeOpacity={0.9}>
           <Text style={styles.createBtnText}>CREATE TRIP!</Text>
         </TouchableOpacity>
 
@@ -197,7 +184,6 @@ const styles = StyleSheet.create({
     borderRadius: 14,
   },
 
-  // Tokyo label "image button behind text"
   heroLabelButton: {
     position: "absolute",
     left: 10,
@@ -211,12 +197,6 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(255,255,255,0.75)",
     borderWidth: 1,
     borderColor: "rgba(17,24,39,0.12)",
-  },
-  heroLabelIcon: {
-    width: 18,
-    height: 18,
-    opacity: 0.9,
-    resizeMode: "contain",
   },
   heroLabelText: {
     fontSize: 16,
