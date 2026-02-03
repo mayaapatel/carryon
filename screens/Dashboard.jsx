@@ -1,7 +1,6 @@
 // screens/Dashboard.jsx
-import React from "react";
-import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 import {
   Image,
   ImageBackground,
@@ -46,6 +45,7 @@ export default function Dashboard() {
 
   const onPastTripPress = (trip) => console.log("Past trip pressed:", trip.label);
   const onCreateTripPress = () => console.log("Create trip pressed");
+  const onJournalPress = () => router.push("/journal");;
   const onBackPress = () => router.back();
 
   return (
@@ -119,6 +119,10 @@ export default function Dashboard() {
         {/* Create Trip button */}
         <TouchableOpacity onPress={onCreateTripPress} style={styles.createBtn} activeOpacity={0.9}>
           <Text style={styles.createBtnText}>CREATE TRIP!</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity onPress={onJournalPress} style={styles.createBtn} activeOpacity={0.9}>
+          <Text style={styles.createBtnText}>journal camera</Text>
         </TouchableOpacity>
 
         <View style={{ height: 24 }} />
