@@ -1,18 +1,19 @@
-import React, { useMemo, useState } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  SafeAreaView,
-  StatusBar,
-  TouchableOpacity,
-  Image,
-  ScrollView,
-  Modal,
-  Pressable,
-  Platform,
-} from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
+import { useMemo, useState } from "react";
+import {
+  Image,
+  Modal,
+  Platform,
+  Pressable,
+  SafeAreaView,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 
 /**
  * --- Data models (simple MVP) ---
@@ -38,6 +39,9 @@ const WONDERS = [
 ];
 
 export default function TravelHistory() {
+
+  const router = useRouter();
+
   // ---- Local (IN-MEMORY) state ONLY ----
   // This resets when the app reloads/closes (no saving).
   const [completedTrips, setCompletedTrips] = useState([]); // array of trips
@@ -107,7 +111,7 @@ export default function TravelHistory() {
   // ---- Actions ----
   const onBack = () => {
     // If using expo-router later, replace with router.back()
-    console.log("Back");
+    router.back()
   };
 
   const onOpenHighlight = (h) => {
