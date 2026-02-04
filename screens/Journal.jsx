@@ -1,242 +1,254 @@
-import { CameraView, useCameraPermissions } from 'expo-camera';
+// screens/Journal.jsx
+import { Ionicons } from "@expo/vector-icons";
+import { useMemo, useState } from "react";
+import {
+    Image,
+    KeyboardAvoidingView,
+    Platform,
+    SafeAreaView,
+    ScrollView,
+    StatusBar,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
+} from "react-native";
 
-import { useRouter } from "expo-router";
-
-import { useRef, useState } from 'react';
-import { Button, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+/**
+ * Matches the mock:
+ * - Top bar with back + centered "Journal"
+ * - Middle feed (text + images) is scrollable
+ * - Bottom fixed composer: "Add Journal Entry" + upload icon + input + send icon
+ *
+ * Put in: carryon/screens/Journal.jsx
+ * Images expected in: carryon/assets/images/
+ * - journal-fuji.jpg
+ * - journal-sunset.jpg (or any 2nd image)
+ */
 
 export default function Journal() {
-
-    const router = useRouter();
-
-  const [facing, setFacing] = useState('back');
-
-
-  const [permission, requestPermission] = useCameraPermissions();
-
-  const cameraRef = useRef(null);
-  const [photoUri, setPhotoUri] = useState(null);
-
-  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
-  const [isTaking, setIsTaking] = useState(false);
-
-  if (!permission) {
-  return <View />;
-    }
-
-if (!permission.granted) {
-  return (
-    <View style={styles.container}>
-      <Text style={styles.message}>
-        We need your permission to show the camera
-      </Text>
-      <Button onPress={requestPermission} title="Grant Permission" />
-    </View>
+  // Mock entries (swap to real data later)
+  const entries = useMemo(
+    () => [
+      {
+        id: "e1",
+        daysAgo: "3 Days Ago",
+        text: "Today's view of Mount Fuji",
+        image: require("../assets/images/past-peru.jpg"),
+      },
+      {
+        id: "e2",
+        daysAgo: "5 Days Ago",
+        text: "I visited to Byodo-In Temple...it was amazing.",
+        image: require("../assets/images/past-dc.jpg"),
+      },
+    ],
+    []
   );
-}
 
-  function toggleCameraFacing() {
-    setFacing(current => (current === 'back' ? 'front' : 'back'));
-  }
+  const [draft, setDraft] = useState("");
 
-  const takePicture = async () => {
-  if (!cameraRef.current || isTaking) return;
-  setIsTaking(true);
+  const onBack = () => {
+    // if using expo-router later: router.back()
+    console.log("Back");
+  };
 
-  try {
-    const photo = await cameraRef.current.takePictureAsync({ quality: 0.8 });
-    setPhotoUri(photo.uri);
-  } finally {
-    setIsTaking(false);
-  }
-};
-
-const onBackPress = () => router.back();
+  const onAttach = () => console.log("Attach photo");
+  const onSend = () => {
+    console.log("Send entry:", draft);
+    setDraft("");
+  };
 
   return (
+    <SafeAreaView style={styles.safe}>
+      <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
 
-    
-
-    <View style={styles.container}>
-
+      <KeyboardAvoidingView
+        style={styles.flex}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 10 : 0}
+      >
+        {/* Top bar */}
         <View style={styles.topRow}>
-          <TouchableOpacity
-                style={styles.previewButton}
-                onPress={() => {
-                  onBackPress()
-                }}
-              >
-                <Text style={styles.text}>← Back</Text>
-              </TouchableOpacity>
+          <TouchableOpacity onPress={onBack} style={styles.iconBtn} activeOpacity={0.75}>
+            <Ionicons name="chevron-back" size={24} color="#111827" />
+          </TouchableOpacity>
+
+          <Text style={styles.topTitle}>Journal</Text>
+
+          {/* spacer */}
+          <View style={{ width: 36 }} />
         </View>
 
-      <CameraView
+        {/* ✅ Scrollable middle content */}
+        <ScrollView
+          style={styles.feed}
+          contentContainerStyle={styles.feedContent}
+          showsVerticalScrollIndicator={false}
+        >
+          {entries.map((e) => (
+            <View key={e.id} style={styles.entry}>
+              <Text style={styles.daysAgo}>{e.daysAgo}</Text>
+              <Text style={styles.entryText}>{e.text}</Text>
 
-  
-        ref={cameraRef}
-        style={styles.camera}
-        facing={facing}
-      />
-
-       {/* {photoUri && (
-          <Image
-            source={{ uri: photoUri }}
-            style={styles.photoPreview}
-          />
-        )} */}
-
-         {photoUri && !isPreviewOpen && (
-          <TouchableOpacity
-            style={styles.photoPreviewWrapper}
-            onPress={() => setIsPreviewOpen(true)}
-          >
-            <Image source={{ uri: photoUri }} style={styles.photoPreviewImage} />
-          </TouchableOpacity>
-        )}
-
-
-        
-        {photoUri && isPreviewOpen && (
-          <View style={styles.fullPreviewContainer}>
-            <Image
-              source={{ uri: photoUri }}
-              style={styles.fullPreviewImage}
-            />
-            <View style={styles.fullPreviewButtons}>
-              <TouchableOpacity
-                style={styles.previewButton}
-                onPress={() => {
-                  setIsPreviewOpen(false); // close full-screen preview
-                }}
-              >
-                <Text style={styles.text}>← Back</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.previewButton}
-                onPress={() => {
-                  // Placeholder for save
-                }}
-              >
-                <Text style={styles.text}>Save</Text>
-              </TouchableOpacity>
+              <View style={styles.imageCard}>
+                <Image source={e.image} style={styles.entryImage} />
+              </View>
             </View>
-          </View>
-        )}
+          ))}
 
-        {!isPreviewOpen && (
-          <View style={styles.buttonContainer}>
-            <TouchableOpacity style={styles.button} onPress={toggleCameraFacing}>
-              <Text style={styles.text}>Flip</Text>
+          {/* spacer so last entry isn't hidden behind composer */}
+          <View style={{ height: 110 }} />
+        </ScrollView>
+
+        {/* Bottom composer (fixed) */}
+        <View style={styles.composer}>
+          <View style={styles.composerHeader}>
+            <Text style={styles.composerTitle}>Add Journal Entry</Text>
+            <TouchableOpacity onPress={onAttach} style={styles.attachBtn} activeOpacity={0.8}>
+              <Ionicons name="cloud-upload-outline" size={22} color="#2E5BFF" />
             </TouchableOpacity>
+          </View>
 
-            <TouchableOpacity style={styles.button} onPress={takePicture}>
-              <Text style={styles.text}>Take</Text>
+          <View style={styles.composerRow}>
+            <TextInput
+              value={draft}
+              onChangeText={setDraft}
+              placeholder="Write the entry here"
+              placeholderTextColor="rgba(17,24,39,0.35)"
+              style={styles.input}
+              multiline
+            />
+
+            <TouchableOpacity onPress={onSend} style={styles.sendBtn} activeOpacity={0.85}>
+              <Ionicons name="arrow-up" size={20} color="#2E5BFF" />
             </TouchableOpacity>
           </View>
-        )}
-      
-
-      <View style={styles.buttonContainer}>
-      </View>
-
-
-    </View>
+        </View>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 
+const BLUE = "#2E5BFF";
+
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-  },
+  safe: { flex: 1, backgroundColor: "#fff" },
+  flex: { flex: 1 },
+
   topRow: {
-      paddingTop: 50,
-      paddingBottom: 6,
-      flexDirection: "row",
-      alignItems: "center",
-    },
-    iconButton: {
-      width: 36,
-      height: 36,
-      borderRadius: 18,
-      alignItems: "center",
-      justifyContent: "center",
-    },
-  message: {
-    textAlign: 'center',
+    paddingHorizontal: 18,
+    paddingTop: Platform.OS === "android" ? 10 : 4,
     paddingBottom: 10,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
   },
-  camera: {
+  iconBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  topTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#111827",
+  },
+
+  feed: { flex: 1 },
+  feedContent: {
+    paddingHorizontal: 18,
+    paddingTop: 4,
+    paddingBottom: 0,
+  },
+
+  entry: { marginBottom: 18 },
+  daysAgo: {
+    fontSize: 12,
+    fontWeight: "800",
+    color: "#111827",
+    marginBottom: 6,
+  },
+  entryText: {
+    fontSize: 12,
+    color: "rgba(17,24,39,0.7)",
+    marginBottom: 10,
+  },
+
+  imageCard: {
+    width: "100%",
+    borderRadius: 8,
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: "rgba(17,24,39,0.08)",
+    backgroundColor: "#f3f4f6",
+  },
+  entryImage: {
+    width: "100%",
+    height: 210,
+    resizeMode: "cover",
+  },
+
+  composer: {
+    borderTopWidth: 1,
+    borderTopColor: "rgba(17,24,39,0.10)",
+    paddingHorizontal: 18,
+    paddingTop: 10,
+    paddingBottom: Platform.OS === "ios" ? 14 : 10,
+    backgroundColor: "#fff",
+  },
+
+  composerHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    position: "relative",
+    marginBottom: 10,
+  },
+  composerTitle: {
+    fontSize: 18,
+    fontWeight: "500",
+    color: "#111827",
+  },
+  attachBtn: {
+    position: "absolute",
+    right: 0,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  composerRow: {
+    flexDirection: "row",
+    alignItems: "flex-end",
+    gap: 10,
+  },
+  input: {
     flex: 1,
+    minHeight: 40,
+    maxHeight: 86,
+    borderWidth: 1,
+    borderColor: "rgba(17,24,39,0.12)",
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 13,
+    color: "#111827",
+    backgroundColor: "#fff",
   },
-  buttonContainer: {
-    position: 'absolute',
-    bottom: 64,
-    flexDirection: 'row',
-    backgroundColor: 'transparent',
-    width: '100%',
-    paddingHorizontal: 64,
+  sendBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: "rgba(46,91,255,0.35)",
+    backgroundColor: "rgba(46,91,255,0.06)",
   },
-  button: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  text: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: 'white',
-  },
-  photoPreviewWrapper: {
-  position: 'absolute',
-  top: 40,
-  right: 20,
-  width: 100,
-  height: 140,
-  zIndex: 10,
-},
-
-photoPreviewImage: {
-  width: '100%',
-  height: '100%',
-  borderRadius: 10,
-  borderWidth: 2,
-  borderColor: 'white',
-},
-  fullPreviewContainer: {
-  position: 'absolute',
-  top: 0,
-  left: 0,
-  right: 0,
-  bottom: 0,
-  backgroundColor: 'black',
-  justifyContent: 'center',
-},
-
-fullPreviewImage: {
-  flex: 1,
-  resizeMode: 'contain',
-},
-
-fullPreviewButtons: {
-  position: 'absolute',
-  top: 100,
-  left: 0,
-  right: 0,
-  flexDirection: 'row',
-  justifyContent: 'space-between',
-  paddingHorizontal: 20,
-},
-
-previewButton: {
-  backgroundColor: 'rgba(0,0,0,0.6)',
-  paddingVertical: 10,
-  paddingHorizontal: 14,
-  borderRadius: 8,
-},
-
-previewText: {
-  color: 'white',
-  fontSize: 16,
-},
-
 });

@@ -45,7 +45,9 @@ export default function Dashboard() {
 
   const onPastTripPress = (trip) => console.log("Past trip pressed:", trip.label);
   const onCreateTripPress = () => console.log("Create trip pressed");
-  const onJournalPress = () => router.push("/journal");;
+  const onCameraPress = () => router.push("/camera");
+  const onPreparationPress = () => router.push("/preparation");
+  const onJournal = () => router.push("/journal");
   const onBackPress = () => router.back();
 
   return (
@@ -121,8 +123,16 @@ export default function Dashboard() {
           <Text style={styles.createBtnText}>CREATE TRIP!</Text>
         </TouchableOpacity>
 
+        <TouchableOpacity onPress={onCameraPress} style={styles.createBtn} activeOpacity={0.9}>
+          <Text style={styles.createBtnText}>camera</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity onPress={onPreparationPress} style={styles.createBtn} activeOpacity={0.9}>
+          <Text style={styles.createBtnText}>preparation</Text>
+        </TouchableOpacity>
+
         <TouchableOpacity onPress={onJournalPress} style={styles.createBtn} activeOpacity={0.9}>
-          <Text style={styles.createBtnText}>journal camera</Text>
+          <Text style={styles.createBtnText}>journal</Text>
         </TouchableOpacity>
 
         <View style={{ height: 24 }} />
