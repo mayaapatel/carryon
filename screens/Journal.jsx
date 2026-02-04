@@ -71,6 +71,8 @@ const onBackPress = () => router.back();
         </View>
 
       <CameraView
+
+  
         ref={cameraRef}
         style={styles.camera}
         facing={facing}
@@ -148,7 +150,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   topRow: {
-      paddingTop: 4,
+      paddingTop: 50,
       paddingBottom: 6,
       flexDirection: "row",
       alignItems: "center",
