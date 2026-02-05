@@ -48,6 +48,7 @@ export default function Dashboard() {
   const onCameraPress = () => router.push("/camera");
   const onPreparationPress = () => router.push("/preparation");
   const onJournal = () => router.push("/journal");
+  const onChatPress = () => router.push("/chat");
   const onBackPress = () => router.back();
 
   return (
@@ -131,8 +132,12 @@ export default function Dashboard() {
           <Text style={styles.createBtnText}>preparation</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity onPress={onJournalPress} style={styles.createBtn} activeOpacity={0.9}>
+        {/* <TouchableOpacity onPress={onJournalPress} style={styles.createBtn} activeOpacity={0.9}>
           <Text style={styles.createBtnText}>journal</Text>
+        </TouchableOpacity> */}
+
+        <TouchableOpacity onPress={onChatPress} style={styles.createBtn} activeOpacity={0.9}>
+          <Text style={styles.createBtnText}>chat</Text>
         </TouchableOpacity>
 
         <View style={{ height: 24 }} />
