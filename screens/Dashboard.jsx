@@ -49,6 +49,7 @@ export default function Dashboard() {
   const onPreparationPress = () => router.push("/preparation");
   const onJournal = () => router.push("/journal");
   const onChatPress = () => router.push("/chat");
+  const onSignInPress = () => router.push("/signin");
   const onBackPress = () => router.back();
 
   return (
@@ -121,7 +122,7 @@ export default function Dashboard() {
 
         {/* Create Trip button */}
         <TouchableOpacity onPress={onCreateTripPress} style={styles.createBtn} activeOpacity={0.9}>
-          <Text style={styles.createBtnText}>CREATE TRIP!</Text>
+          <Text style={styles.createBtnText}>CREATE TRIP! (doesn't work rn)</Text>
         </TouchableOpacity>
 
         <TouchableOpacity onPress={onCameraPress} style={styles.createBtn} activeOpacity={0.9}>
@@ -138,6 +139,10 @@ export default function Dashboard() {
 
         <TouchableOpacity onPress={onChatPress} style={styles.createBtn} activeOpacity={0.9}>
           <Text style={styles.createBtnText}>chat</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity onPress={onSignInPress} style={styles.createBtn} activeOpacity={0.9}>
+          <Text style={styles.createBtnText}>sign in screen</Text>
         </TouchableOpacity>
 
         <View style={{ height: 24 }} />
