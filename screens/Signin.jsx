@@ -1,16 +1,21 @@
 // screens/Auth.jsx
+import { useRouter } from "expo-router";
 import { useState } from "react";
 import {
-    KeyboardAvoidingView,
-    Platform,
-    SafeAreaView,
-    StatusBar,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  KeyboardAvoidingView,
+  Platform,
+  SafeAreaView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
+
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from "firebase/auth";
+import { auth } from "../firebaseConfig";
+
 
 /**
  * UI-only Auth screen to match the mock.
@@ -23,11 +28,37 @@ import {
  */
 
 export default function Auth() {
+  const router = useRouter();
+
   const [email, setEmail] = useState("");
+
+  const [username, setUsername] = useState("");
+   
   const [password, setPassword] = useState("");
 
-  const onSignUp = () => console.log("Sign Up", email, password);
-  const onLogIn = () => console.log("Log In", email, password);
+  const onSignUp = async () => {
+  try {
+    await createUserWithEmailAndPassword(auth, email.trim(), password);
+    console.log("Signed up!");
+    // later: router.replace("/dashboard") or whatever
+  } catch (e) {
+    console.log("Sign up error:", e.message);
+  }
+
+  router.push("/dashboard")
+};
+
+const onLogIn = async () => {
+  try {
+    await signInWithEmailAndPassword(auth, email.trim(), password);
+    console.log("Logged in!");
+  } catch (e) {
+    console.log("Log in error:", e.message);
+  }
+
+  router.push("/dashboard")
+};
+
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -60,6 +91,15 @@ export default function Auth() {
             />
 
             <TextInput
+              value={username}
+              onChangeText={setUsername}
+              placeholder="Username"
+              placeholderTextColor="rgba(17,24,39,0.35)"
+              secureTextEntry
+              style={styles.input}
+            />
+
+            <TextInput
               value={password}
               onChangeText={setPassword}
               placeholder="Password"
@@ -67,6 +107,8 @@ export default function Auth() {
               secureTextEntry
               style={styles.input}
             />
+
+            
 
             <View style={styles.btnRow}>
               <TouchableOpacity onPress={onSignUp} style={styles.btn} activeOpacity={0.9}>

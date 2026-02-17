@@ -1,3 +1,3 @@
-import Dashboard from "../screens/Dashboard";
-export default Dashboard;
+import Signin from "../screens/Signin";
+export default Signin;
 
