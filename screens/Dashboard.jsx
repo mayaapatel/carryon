@@ -39,9 +39,7 @@ export default function Dashboard() {
   const onTokyoLabelPress = () => router.push("/maintrip");
 
   // ✅ Navigate to Travel History
-  const onPastTripsArrowPress = () => {
-    router.push("/travel-history");
-  };
+  const onPastTripsArrowPress = () => { router.push("/pasttriplist");  };
 
   const onPastTripPress = (trip) => console.log("Past trip pressed:", trip.label);
   const onCreateTripPress = () => console.log("Create trip pressed");
