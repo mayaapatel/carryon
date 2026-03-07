@@ -3,15 +3,15 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useMemo, useState } from "react";
 import {
-    Image,
-    Platform,
-    Pressable,
-    SafeAreaView,
-    ScrollView,
-    StatusBar,
-    StyleSheet,
-    Text,
-    View,
+  Image,
+  Platform,
+  Pressable,
+  SafeAreaView,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  View,
 } from "react-native";
 
 const BLUE = "#3F63F3";
@@ -19,7 +19,9 @@ const BLUE = "#3F63F3";
 export default function MainTrip() {
   const router = useRouter();
 
-  // ✅ local images (NO links)
+  // ✅ set your trip id for this screen
+  const tripId = "tokyo-2026";
+
   const tiles = useMemo(
     () => [
       {
@@ -51,15 +53,20 @@ export default function MainTrip() {
   );
 
   const [activeId, setActiveId] = useState(null);
-
   const showLabel = (id) => setActiveId(id);
   const hideLabel = () => setActiveId(null);
 
   const onBack = () => router.back();
 
-  // Buttons (wire these up later)
+  // Buttons
   const onTodo = () => console.log("My Tokyo To-Do");
-  const onAdd = () => console.log("Add Activity");
+
+  // ✅ IMPORTANT: push to the route file in /app (app/addactivity.jsx)
+  const onAdd = () => {
+    console.log("ADD CLICKED");
+    router.push({ pathname: "/addactivity", params: { tripId } });
+  };
+
   const onExpenses = () => console.log("Expenses");
   const onNotes = () => console.log("Notes");
 
@@ -67,7 +74,10 @@ export default function MainTrip() {
     <SafeAreaView style={styles.safe}>
       <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
 
-      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={styles.scroll}
+        showsVerticalScrollIndicator={false}
+      >
         {/* Top row */}
         <View style={styles.topRow}>
           <Pressable onPress={onBack} style={styles.iconButton} hitSlop={8}>
@@ -97,16 +107,17 @@ export default function MainTrip() {
                 key={t.id}
                 style={styles.tile}
                 onPress={() => console.log("Open tile:", t.title)}
-                // ✅ "hover" on web
-                onHoverIn={Platform.OS === "web" ? () => showLabel(t.id) : undefined}
+                onHoverIn={
+                  Platform.OS === "web" ? () => showLabel(t.id) : undefined
+                }
                 onHoverOut={Platform.OS === "web" ? hideLabel : undefined}
-                // ✅ "press/hold" on mobile
-                onPressIn={Platform.OS !== "web" ? () => showLabel(t.id) : undefined}
+                onPressIn={
+                  Platform.OS !== "web" ? () => showLabel(t.id) : undefined
+                }
                 onPressOut={Platform.OS !== "web" ? hideLabel : undefined}
               >
                 <Image source={t.img} style={styles.tileImg} />
 
-                {/* name/date overlay */}
                 {isActive && (
                   <View style={styles.labelPill}>
                     <Text style={styles.labelText}>
