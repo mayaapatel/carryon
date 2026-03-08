@@ -66,7 +66,7 @@ export default function Dashboard() {
 
   const onCreateTripPress = () => router.push("/createtrip");;
   const onMainTripPress = () => router.push("/maintrip");
-  const onCameraPress = () => router.push("/camera");
+  const onUpcomingPress = () => router.push("/upcoming");
   const onBackPress = () => router.back();
 
   return (
@@ -172,11 +172,11 @@ export default function Dashboard() {
         </TouchableOpacity>
 
         <TouchableOpacity
-          onPress={onCameraPress}
+          onPress={onUpcomingPress}
           style={styles.createBtn}
           activeOpacity={0.9}
         >
-          <Text style={styles.createBtnText}>camera</Text>
+          <Text style={styles.createBtnText}>upcoming</Text>
         </TouchableOpacity>
 
         <View style={{ height: 24 }} />

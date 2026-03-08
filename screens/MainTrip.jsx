@@ -68,7 +68,7 @@ export default function MainTrip() {
   };
 
   const onExpenses = () => console.log("Expenses");
-  const onNotes = () => console.log("Notes");
+  const onJournal = () => router.push("/journal");
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -143,8 +143,8 @@ export default function MainTrip() {
           <Text style={styles.btnText}>Expenses</Text>
         </Pressable>
 
-        <Pressable onPress={onNotes} style={styles.btn}>
-          <Text style={styles.btnText}>Notes</Text>
+        <Pressable onPress={onJournal} style={styles.btn}>
+          <Text style={styles.btnText}>Journal</Text>
         </Pressable>
 
         <View style={{ height: 24 }} />

@@ -49,7 +49,20 @@ export default function CreateTrip() {
     };
 
     const trip = collection(db, 'users', user.uid, 'trips');
-    await addDoc(trip, tripData); // addDoc auto-generates a unique ID
+    const docRef = await addDoc(trip, tripData);
+
+    await addDoc(collection(db, 'users', user.uid, 'journals'), {
+        tripId: docRef.id,
+        createdAt: Timestamp.now(),
+    });
+
+    if (withGroup) {
+    await addDoc(collection(db, 'groupchats'), {
+        tripId: docRef.id,
+        members: [user.uid],
+        createdAt: Timestamp.now(),
+    });
+    }
   };
 
 

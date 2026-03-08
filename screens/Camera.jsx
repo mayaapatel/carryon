@@ -117,7 +117,7 @@ const onBackPress = () => router.back();
                   // Placeholder for save
                 }}
               >
-                <Text style={styles.text}>Save</Text>
+                <Text style={styles.text}>Upload</Text>
               </TouchableOpacity>
             </View>
           </View>
