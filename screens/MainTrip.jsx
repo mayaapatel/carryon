@@ -129,7 +129,7 @@ export default function MainTrip() {
           </Pressable>
         </View>
 
-        <Text style={styles.subhead}>Your trips so far...</Text>
+        <Text style={styles.subhead}>Placeholder</Text>
 
         <View style={styles.grid}>
           {tiles.map((t) => {
