@@ -1,33 +1,27 @@
 import { Ionicons } from "@expo/vector-icons";
-import * as ImagePicker from "expo-image-picker";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import {
   Alert,
   FlatList,
-  Image,
   Pressable,
   SafeAreaView,
-  ScrollView,
   StatusBar,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
-  View
+  View,
 } from "react-native";
 
 import {
-  addDoc,
-  collection,
+  doc,
   onSnapshot,
-  orderBy,
-  query,
   serverTimestamp,
-  where,
+  setDoc,
+  Timestamp,
 } from "firebase/firestore";
-import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
-import { auth, db, storage } from "../firebaseConfig";
+import { auth, db } from "../firebaseConfig";
 
 export default function JournalScreen() {
   const router = useRouter();
@@ -36,7 +30,6 @@ export default function JournalScreen() {
 
   const [entryText, setEntryText] = useState("");
   const [entries, setEntries] = useState([]);
-  const [selectedPhotos, setSelectedPhotos] = useState([]);
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -47,35 +40,42 @@ export default function JournalScreen() {
       return;
     }
 
-    const journalsRef = collection(db, "users", user.uid, "journals");
-    const q = query(
-      journalsRef,
-      where("tripId", "==", tripId),
-      orderBy("createdAt", "desc")
-    );
+    const journalRef = doc(db, "users", user.uid, "journals", tripId);
 
     const unsubscribe = onSnapshot(
-      q,
+      journalRef,
       (snapshot) => {
-        const journalEntries = snapshot.docs.map((doc) => {
-          const data = doc.data();
+        if (!snapshot.exists()) {
+          setEntries([]);
+          return;
+        }
 
-          return {
-            id: doc.id,
-            text: data.text || "",
-            images: Array.isArray(data.images) ? data.images : [],
-            createdAt: data.createdAt || null,
-            daysAgo: getRelativeTime(data.createdAt),
-          };
+        const data = snapshot.data();
+        const loadedEntries = Array.isArray(data.entries) ? data.entries : [];
+
+        const sortedEntries = [...loadedEntries].sort((a, b) => {
+          const aMs = a?.createdAt?.seconds
+            ? a.createdAt.seconds * 1000
+            : 0;
+          const bMs = b?.createdAt?.seconds
+            ? b.createdAt.seconds * 1000
+            : 0;
+          return bMs - aMs;
         });
 
-        setEntries(journalEntries);
+        const formattedEntries = sortedEntries.map((entry, index) => ({
+          id:
+            entry.id ||
+            `${index}-${entry.createdAt?.seconds || Date.now()}`,
+          text: entry.text || "",
+          createdAt: entry.createdAt || null,
+          daysAgo: getRelativeTime(entry.createdAt),
+        }));
+
+        setEntries(formattedEntries);
       },
       (error) => {
         console.log("Journal load error:", error);
-        console.log("Journal load error code:", error?.code);
-        console.log("Journal load error message:", error?.message);
-
         Alert.alert("Error", "Could not load journal entries.");
       }
     );
@@ -101,24 +101,6 @@ export default function JournalScreen() {
     return `${days} Days Ago`;
   }
 
-  async function uriToBlob(uri) {
-    const response = await fetch(uri);
-    const blob = await response.blob();
-    return blob;
-  }
-
-  async function uploadPhotoAsync(uri, userId, tripId) {
-  const blob = await uriToBlob(uri);
-
-  const fileName = `journal_${Date.now()}.jpg`;
-  const storageRef = ref(storage, `users/${userId}/journals/${tripId}/${fileName}`);
-
-  await uploadBytes(storageRef, blob);
-
-  const downloadURL = await getDownloadURL(storageRef);
-  return downloadURL;
-}
-
   async function handleSubmit() {
     const user = auth.currentUser;
 
@@ -132,125 +114,53 @@ export default function JournalScreen() {
       return;
     }
 
-    if (!entryText.trim() && selectedPhotos.length === 0) return;
+    if (!entryText.trim()) return;
     if (submitting) return;
 
     try {
       setSubmitting(true);
 
-      const imageUrls = await Promise.all(
-        selectedPhotos.map((photo) => uploadPhotoAsync(photo.uri, user.uid, tripId))
-      );
+      const journalRef = doc(db, "users", user.uid, "journals", tripId);
 
-      await addDoc(collection(db, "users", user.uid, "journals"), {
-        tripId,
+      const newEntry = {
+        id: Date.now().toString(),
         text: entryText.trim(),
-        images: imageUrls,
-        createdAt: serverTimestamp(),
-      });
+        createdAt: Timestamp.now(),
+      };
+
+      const existingEntries = entries.map((entry) => ({
+        id: entry.id,
+        text: entry.text,
+        createdAt: entry.createdAt || Timestamp.now(),
+      }));
+
+      await setDoc(
+        journalRef,
+        {
+          tripId,
+          updatedAt: serverTimestamp(),
+          entries: [newEntry, ...existingEntries],
+        },
+        { merge: true }
+      );
 
       setEntryText("");
-      setSelectedPhotos([]);
     } catch (error) {
-      console.log("Journal submit error object:", error);
-      console.log("Journal submit error code:", error?.code);
-      console.log("Journal submit error message:", error?.message);
-
-      Alert.alert(
-        "Upload failed",
-        error?.message || "Could not save journal entry."
-      );
+      console.log("Journal submit error:", error);
+      Alert.alert("Error", error?.message || "Could not save journal entry.");
     } finally {
       setSubmitting(false);
     }
   }
 
-  async function pickFromLibrary() {
-    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-
-    if (!permission.granted) {
-      Alert.alert("Permission needed", "Please allow photo library access.");
-      return;
-    }
-
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      quality: 0.8,
-      allowsEditing: false,
-      allowsMultipleSelection: true,
-      selectionLimit: 10,
-    });
-
-    if (result.canceled) return;
-
-    const newItems = result.assets.map((asset) => ({
-      id: `${Date.now()}-${Math.random()}`,
-      uri: asset.uri,
-      name: asset.fileName || "Photo",
-    }));
-
-    setSelectedPhotos((prev) => [...prev, ...newItems]);
-  }
-
-  async function takePhoto() {
-    const permission = await ImagePicker.requestCameraPermissionsAsync();
-
-    if (!permission.granted) {
-      Alert.alert("Permission needed", "Please allow camera access.");
-      return;
-    }
-
-    const result = await ImagePicker.launchCameraAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      quality: 0.8,
-      allowsEditing: false,
-    });
-
-    if (result.canceled) return;
-
-    const newItems = result.assets.map((asset) => ({
-      id: `${Date.now()}-${Math.random()}`,
-      uri: asset.uri,
-      name: asset.fileName || "Camera Photo",
-    }));
-
-    setSelectedPhotos((prev) => [...prev, ...newItems]);
-  }
-
   function handleUploadPhoto() {
-    Alert.alert("Add Photo", "Choose what you want to do.", [
-      { text: "Take Photo", onPress: takePhoto },
-      { text: "Upload Photo", onPress: pickFromLibrary },
-      { text: "Cancel", style: "cancel" },
-    ]);
-  }
-
-  function removePhoto(id) {
-    setSelectedPhotos((prev) => prev.filter((item) => item.id !== id));
+    Alert.alert("Photos removed", "This journal currently supports text entries only.");
   }
 
   const renderEntry = ({ item }) => (
     <View style={styles.entryBlock}>
       <Text style={styles.daysAgo}>{item.daysAgo}</Text>
-
       {item.text ? <Text style={styles.entryText}>{item.text}</Text> : null}
-
-      {Array.isArray(item.images) && item.images.length > 0 ? (
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.entryImagesRow}
-        >
-          {item.images.map((img, index) => (
-            <Image
-              key={`${item.id}-${index}`}
-              source={{ uri: img }}
-              style={styles.entryImage}
-              resizeMode="cover"
-            />
-          ))}
-        </ScrollView>
-      ) : null}
     </View>
   );
 
@@ -292,27 +202,6 @@ export default function JournalScreen() {
             style={{ marginLeft: 6 }}
           />
         </View>
-
-        {selectedPhotos.length > 0 && (
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.attachmentsRow}
-          >
-            {selectedPhotos.map((item) => (
-              <View key={item.id} style={styles.attachmentCard}>
-                <Image source={{ uri: item.uri }} style={styles.attachmentImage} />
-
-                <Pressable
-                  style={styles.removeAttachmentButton}
-                  onPress={() => removePhoto(item.id)}
-                >
-                  <Ionicons name="close-circle" size={20} color="#D9534F" />
-                </Pressable>
-              </View>
-            ))}
-          </ScrollView>
-        )}
 
         <View style={styles.inputRow}>
           <TextInput
@@ -391,15 +280,6 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     lineHeight: 20,
   },
-  entryImagesRow: {
-    paddingRight: 8,
-  },
-  entryImage: {
-    width: 220,
-    height: 180,
-    borderRadius: 12,
-    marginRight: 10,
-  },
   emptyText: {
     textAlign: "center",
     color: "#777",
@@ -424,32 +304,6 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: "600",
     color: "#111",
-  },
-
-  attachmentsRow: {
-    paddingBottom: 12,
-    paddingTop: 4,
-  },
-  attachmentCard: {
-    width: 110,
-    height: 90,
-    borderRadius: 12,
-    marginRight: 10,
-    position: "relative",
-    overflow: "visible",
-  },
-  attachmentImage: {
-    width: "100%",
-    height: "100%",
-    borderRadius: 12,
-    backgroundColor: "#eee",
-  },
-  removeAttachmentButton: {
-    position: "absolute",
-    top: -6,
-    right: -6,
-    backgroundColor: "#fff",
-    borderRadius: 999,
   },
 
   inputRow: {
