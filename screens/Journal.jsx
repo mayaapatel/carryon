@@ -14,7 +14,7 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  View,
+  View
 } from "react-native";
 
 import {
@@ -42,10 +42,14 @@ export default function JournalScreen() {
   useEffect(() => {
     const user = auth.currentUser;
 
-    if (!user || !tripId) return;
+    if (!user || !tripId) {
+      setEntries([]);
+      return;
+    }
 
+    const journalsRef = collection(db, "users", user.uid, "journals");
     const q = query(
-      collection(db, "users", user.uid, "journals"),
+      journalsRef,
       where("tripId", "==", tripId),
       orderBy("createdAt", "desc")
     );
@@ -69,7 +73,10 @@ export default function JournalScreen() {
       },
       (error) => {
         console.log("Journal load error:", error);
-        Alert.alert("No previous journal entries");
+        console.log("Journal load error code:", error?.code);
+        console.log("Journal load error message:", error?.message);
+
+        Alert.alert("Error", "Could not load journal entries.");
       }
     );
 
@@ -94,18 +101,23 @@ export default function JournalScreen() {
     return `${days} Days Ago`;
   }
 
-  async function uploadPhotoAsync(uri, userId) {
+  async function uriToBlob(uri) {
     const response = await fetch(uri);
     const blob = await response.blob();
-
-    const fileName = `journal_${Date.now()}_${Math.floor(Math.random() * 100000)}.jpg`;
-    const storageRef = ref(storage, `users/${userId}/journals/${tripId}/${fileName}`);
-
-    await uploadBytes(storageRef, blob);
-    const downloadURL = await getDownloadURL(storageRef);
-
-    return downloadURL;
+    return blob;
   }
+
+  async function uploadPhotoAsync(uri, userId, tripId) {
+  const blob = await uriToBlob(uri);
+
+  const fileName = `journal_${Date.now()}.jpg`;
+  const storageRef = ref(storage, `users/${userId}/journals/${tripId}/${fileName}`);
+
+  await uploadBytes(storageRef, blob);
+
+  const downloadURL = await getDownloadURL(storageRef);
+  return downloadURL;
+}
 
   async function handleSubmit() {
     const user = auth.currentUser;
@@ -126,12 +138,9 @@ export default function JournalScreen() {
     try {
       setSubmitting(true);
 
-      const imageUrls = [];
-
-      for (const photo of selectedPhotos) {
-        const url = await uploadPhotoAsync(photo.uri, user.uid);
-        imageUrls.push(url);
-      }
+      const imageUrls = await Promise.all(
+        selectedPhotos.map((photo) => uploadPhotoAsync(photo.uri, user.uid, tripId))
+      );
 
       await addDoc(collection(db, "users", user.uid, "journals"), {
         tripId,
@@ -143,8 +152,14 @@ export default function JournalScreen() {
       setEntryText("");
       setSelectedPhotos([]);
     } catch (error) {
-      console.log("Journal submit error:", error);
-      Alert.alert("Error", error.message || "Could not save journal entry.");
+      console.log("Journal submit error object:", error);
+      console.log("Journal submit error code:", error?.code);
+      console.log("Journal submit error message:", error?.message);
+
+      Alert.alert(
+        "Upload failed",
+        error?.message || "Could not save journal entry."
+      );
     } finally {
       setSubmitting(false);
     }
@@ -159,7 +174,7 @@ export default function JournalScreen() {
     }
 
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ["images"],
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
       quality: 0.8,
       allowsEditing: false,
       allowsMultipleSelection: true,
@@ -186,7 +201,7 @@ export default function JournalScreen() {
     }
 
     const result = await ImagePicker.launchCameraAsync({
-      mediaTypes: ["images"],
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
       quality: 0.8,
       allowsEditing: false,
     });
@@ -244,9 +259,14 @@ export default function JournalScreen() {
       <StatusBar barStyle="dark-content" />
 
       <View style={styles.header}>
-        <Pressable onPress={() => router.back()} style={styles.iconButton} hitSlop={8}>
+        <Pressable
+          onPress={() => router.back()}
+          style={styles.iconButton}
+          hitSlop={8}
+        >
           <Ionicons name="chevron-back" size={24} color="#111827" />
         </Pressable>
+
         <Text style={styles.title}>Journal</Text>
         <View style={styles.iconButton} />
       </View>
@@ -257,6 +277,9 @@ export default function JournalScreen() {
         renderItem={renderEntry}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
+        ListEmptyComponent={
+          <Text style={styles.emptyText}>No journal entries yet for this trip.</Text>
+        }
       />
 
       <View style={styles.bottomArea}>
@@ -300,13 +323,14 @@ export default function JournalScreen() {
             onChangeText={setEntryText}
             multiline
           />
+
           <View style={styles.actionButtons}>
             <TouchableOpacity style={styles.uploadBtn} onPress={handleUploadPhoto}>
               <Text style={styles.uploadBtnText}>Upload Photo</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={[styles.submitBtn, submitting && { opacity: 0.6 }]}
+              style={[styles.submitBtn, submitting && styles.submitBtnDisabled]}
               onPress={handleSubmit}
               disabled={submitting}
             >
@@ -350,6 +374,7 @@ const styles = StyleSheet.create({
   listContent: {
     paddingHorizontal: 20,
     paddingBottom: 16,
+    flexGrow: 1,
   },
   entryBlock: {
     marginBottom: 24,
@@ -374,6 +399,12 @@ const styles = StyleSheet.create({
     height: 180,
     borderRadius: 12,
     marginRight: 10,
+  },
+  emptyText: {
+    textAlign: "center",
+    color: "#777",
+    fontSize: 14,
+    marginTop: 30,
   },
 
   bottomArea: {
@@ -461,5 +492,8 @@ const styles = StyleSheet.create({
     height: 36,
     alignItems: "center",
     justifyContent: "center",
+  },
+  submitBtnDisabled: {
+    opacity: 0.6,
   },
 });
