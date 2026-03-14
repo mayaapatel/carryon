@@ -1,9 +1,11 @@
 import { Ionicons } from "@expo/vector-icons";
+import * as ImagePicker from "expo-image-picker";
 import { useFocusEffect, useRouter } from "expo-router";
-import { collection, getDocs } from "firebase/firestore";
+import { collection, doc, getDocs, updateDoc } from "firebase/firestore";
 import { useCallback, useMemo, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   Image,
   Pressable,
   SafeAreaView,
@@ -14,6 +16,11 @@ import {
   View,
 } from "react-native";
 import { auth, db } from "../firebaseConfig";
+
+const BLUE = "#4967E8";
+const TEXT = "#111827";
+const BORDER = "#E5E7EB";
+const BG = "#FFFFFF";
 
 function getTimestampMillis(value) {
   if (!value) return 0;
@@ -64,6 +71,7 @@ export default function PastTripList() {
   const router = useRouter();
   const [pastTrips, setPastTrips] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [updatingTripId, setUpdatingTripId] = useState(null);
 
   const loadPastTrips = async () => {
     try {
@@ -72,7 +80,6 @@ export default function PastTripList() {
       const user = auth.currentUser;
       if (!user) {
         setPastTrips([]);
-        setLoading(false);
         return;
       }
 
@@ -80,9 +87,9 @@ export default function PastTripList() {
       const snapshot = await getDocs(tripsRef);
 
       const loadedTrips = snapshot.docs
-        .map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
+        .map((tripDoc) => ({
+          id: tripDoc.id,
+          ...tripDoc.data(),
         }))
         .filter((trip) => isPastTrip(trip))
         .sort((a, b) => {
@@ -106,14 +113,125 @@ export default function PastTripList() {
     }, [])
   );
 
-  const onOpenTrip = (trip) => {
-    router.push({
-      pathname: "/maintrip",
-      params: {
-        tripId: trip.id,
-        title: trip.title || trip.location || "Trip",
-      },
-    });
+  const saveTripPhotoUri = async (trip, uri) => {
+    try {
+      const user = auth.currentUser;
+      if (!user) {
+        Alert.alert("Not logged in", "Please log in first.");
+        return;
+      }
+
+      setUpdatingTripId(trip.id);
+
+      const tripRef = doc(db, "users", user.uid, "trips", trip.id);
+
+      await updateDoc(tripRef, {
+        imageUrl: uri,
+      });
+
+      setPastTrips((currentTrips) =>
+        currentTrips.map((item) =>
+          item.id === trip.id ? { ...item, imageUrl: uri } : item
+        )
+      );
+    } catch (error) {
+      console.log("saveTripPhotoUri error:", error);
+      Alert.alert("Error", "Could not save photo.");
+    } finally {
+      setUpdatingTripId(null);
+    }
+  };
+
+  const pickFromLibrary = async (trip) => {
+    try {
+      const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+      if (!permission.granted) {
+        Alert.alert("Permission needed", "Please allow photo library access.");
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        quality: 0.8,
+        allowsEditing: false,
+        allowsMultipleSelection: false,
+      });
+
+      if (result.canceled) return;
+
+      const selectedUri = result.assets?.[0]?.uri;
+      if (!selectedUri) return;
+
+      await saveTripPhotoUri(trip, selectedUri);
+    } catch (error) {
+      console.log("pickFromLibrary error:", error);
+      Alert.alert("Error", "Could not add photo.");
+    }
+  };
+
+  const takePhoto = async (trip) => {
+    try {
+      const permission = await ImagePicker.requestCameraPermissionsAsync();
+
+      if (!permission.granted) {
+        Alert.alert("Permission needed", "Please allow camera access.");
+        return;
+      }
+
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        quality: 0.8,
+        allowsEditing: false,
+      });
+
+      if (result.canceled) return;
+
+      const selectedUri = result.assets?.[0]?.uri;
+      if (!selectedUri) return;
+
+      await saveTripPhotoUri(trip, selectedUri);
+    } catch (error) {
+      console.log("takePhoto error:", error);
+      Alert.alert("Error", "Could not take photo.");
+    }
+  };
+
+  const removePhoto = async (trip) => {
+    try {
+      const user = auth.currentUser;
+      if (!user) return;
+
+      setUpdatingTripId(trip.id);
+
+      const tripRef = doc(db, "users", user.uid, "trips", trip.id);
+
+      await updateDoc(tripRef, {
+        imageUrl: "",
+      });
+
+      setPastTrips((currentTrips) =>
+        currentTrips.map((item) =>
+          item.id === trip.id ? { ...item, imageUrl: "" } : item
+        )
+      );
+    } catch (error) {
+      console.log("removePhoto error:", error);
+      Alert.alert("Error", "Could not remove photo.");
+    } finally {
+      setUpdatingTripId(null);
+    }
+  };
+
+  const onChangePhoto = (trip) => {
+    Alert.alert("Trip Photo", "Choose what you want to add.", [
+      { text: "Take Photo", onPress: () => takePhoto(trip) },
+      { text: "Upload Photo", onPress: () => pickFromLibrary(trip) },
+      ...(trip.imageUrl
+        ? [{ text: "Remove Photo", style: "destructive", onPress: () => removePhoto(trip) }]
+        : []),
+      { text: "Cancel", style: "cancel" },
+    ]);
   };
 
   const tripCards = useMemo(() => {
@@ -129,15 +247,17 @@ export default function PastTripList() {
 
       <View style={styles.header}>
         <Pressable onPress={() => router.back()} style={styles.backBtn}>
-          <Ionicons name="chevron-back" size={24} color="#111827" />
+          <Ionicons name="chevron-back" size={24} color={TEXT} />
         </Pressable>
+
         <Text style={styles.headerTitle}>Past Trips</Text>
+
         <View style={{ width: 24 }} />
       </View>
 
       {loading ? (
         <View style={styles.centerWrap}>
-          <ActivityIndicator size="large" color="#3F63F3" />
+          <ActivityIndicator size="large" color={BLUE} />
         </View>
       ) : tripCards.length === 0 ? (
         <View style={styles.centerWrap}>
@@ -148,39 +268,68 @@ export default function PastTripList() {
           contentContainerStyle={styles.scroll}
           showsVerticalScrollIndicator={false}
         >
-          {tripCards.map((trip) => (
-            <Pressable
-              key={trip.id}
-              style={styles.card}
-              onPress={() => onOpenTrip(trip)}
-            >
-              {trip.imageUrl ? (
-                <Image source={{ uri: trip.imageUrl }} style={styles.cardImage} />
-              ) : (
-                <View style={styles.placeholderImage}>
-                  <Ionicons name="airplane" size={26} color="#9CA3AF" />
-                </View>
-              )}
+          {tripCards.map((trip) => {
+            const isUpdating = updatingTripId === trip.id;
 
-              <View style={styles.cardBody}>
-                <Text style={styles.cardTitle}>
-                  {trip.title || trip.location || "Trip"}
-                </Text>
-
-                {!!trip.dateText && (
-                  <Text style={styles.cardDates}>{trip.dateText}</Text>
+            return (
+              <Pressable
+                key={trip.id}
+                style={styles.card}
+                onPress={() =>
+                  router.push({
+                    pathname: "/maintrip",
+                    params: {
+                      tripId: trip.id,
+                      title: trip.title || trip.location || "Trip",
+                    },
+                  })
+                }
+              >
+                {trip.imageUrl ? (
+                  <Image source={{ uri: trip.imageUrl }} style={styles.cardImage} />
+                ) : (
+                  <View style={styles.placeholderImage}>
+                    <Ionicons name="image-outline" size={26} color="#9CA3AF" />
+                  </View>
                 )}
 
-                {!!trip.description && (
-                  <Text style={styles.cardDescription} numberOfLines={2}>
-                    {trip.description}
+                <View style={styles.cardBody}>
+                  <Text style={styles.cardTitle}>
+                    {trip.title || trip.location || "Trip"}
                   </Text>
-                )}
-              </View>
 
-              <Ionicons name="chevron-forward" size={18} color="#6B7280" />
-            </Pressable>
-          ))}
+                  {!!trip.dateText && (
+                    <Text style={styles.cardDates}>{trip.dateText}</Text>
+                  )}
+
+                  <Pressable
+                    style={styles.changePhotoBtn}
+                    onPress={(e) => {
+                      e.stopPropagation();
+                      onChangePhoto(trip);
+                    }}
+                  >
+                    <Ionicons
+                      name={trip.imageUrl ? "create-outline" : "camera-outline"}
+                      size={14}
+                      color={BLUE}
+                    />
+                    <Text style={styles.changePhotoText}>Change Photo</Text>
+
+                    {isUpdating && (
+                      <ActivityIndicator
+                        size="small"
+                        color={BLUE}
+                        style={styles.photoLoader}
+                      />
+                    )}
+                  </Pressable>
+                </View>
+
+                <Ionicons name="chevron-forward" size={18} color="#6B7280" />
+              </Pressable>
+            );
+          })}
         </ScrollView>
       )}
     </SafeAreaView>
@@ -190,7 +339,7 @@ export default function PastTripList() {
 const styles = StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: "#fff",
+    backgroundColor: BG,
   },
 
   header: {
@@ -211,7 +360,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 20,
     fontWeight: "700",
-    color: "#111827",
+    color: TEXT,
   },
 
   centerWrap: {
@@ -235,7 +384,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: "#fff",
     borderWidth: 1,
-    borderColor: "#E5E7EB",
+    borderColor: BORDER,
     borderRadius: 16,
     padding: 12,
     marginBottom: 12,
@@ -247,6 +396,7 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     resizeMode: "cover",
     marginRight: 12,
+    backgroundColor: "#EEE",
   },
 
   placeholderImage: {
@@ -261,25 +411,38 @@ const styles = StyleSheet.create({
 
   cardBody: {
     flex: 1,
+    justifyContent: "center",
     marginRight: 10,
   },
 
   cardTitle: {
     fontSize: 16,
     fontWeight: "700",
-    color: "#111827",
+    color: TEXT,
   },
 
   cardDates: {
     marginTop: 4,
     fontSize: 13,
-    color: "#4967E8",
+    color: BLUE,
     fontWeight: "600",
   },
 
-  cardDescription: {
-    marginTop: 4,
+  changePhotoBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 8,
+    alignSelf: "flex-start",
+  },
+
+  changePhotoText: {
+    marginLeft: 6,
     fontSize: 13,
-    color: "#6B7280",
+    fontWeight: "600",
+    color: BLUE,
+  },
+
+  photoLoader: {
+    marginLeft: 8,
   },
 });
