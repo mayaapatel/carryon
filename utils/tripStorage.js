@@ -1,74 +1,56 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-const TRIPS_KEY = "trips";
-const TRIP_ITEMS_KEY = "tripItems";
-
-export async function getTrips() {
-  try {
-    const raw = await AsyncStorage.getItem(TRIPS_KEY);
-    return raw ? JSON.parse(raw) : [];
-  } catch (error) {
-    console.log("getTrips error:", error);
-    return [];
-  }
+function getTripKey(tripId) {
+  return `trip_items_${tripId}`;
 }
 
-export async function saveTrips(trips) {
-  try {
-    await AsyncStorage.setItem(TRIPS_KEY, JSON.stringify(trips));
-  } catch (error) {
-    console.log("saveTrips error:", error);
-    throw error;
-  }
+function createItemId() {
+  return `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
 }
 
-export async function getTripItemById(tripId) {
-  const trips = await getTrips();
-  return trips.find((trip) => String(trip.id) === String(tripId)) || null;
-}
+export function formatTime(date) {
+  if (!date) return "";
 
-export async function deleteTrip(tripId) {
-  try {
-    const trips = await getTrips();
+  const hours = date.getHours();
+  const minutes = date.getMinutes();
 
-    const updatedTrips = trips.filter(
-      (trip) => String(trip.id) !== String(tripId)
-    );
+  const suffix = hours >= 12 ? "PM" : "AM";
+  const displayHour = hours % 12 === 0 ? 12 : hours % 12;
+  const displayMinute = String(minutes).padStart(2, "0");
 
-    await saveTrips(updatedTrips);
-
-    const rawItems = await AsyncStorage.getItem(TRIP_ITEMS_KEY);
-    const tripItems = rawItems ? JSON.parse(rawItems) : {};
-
-    if (tripItems[String(tripId)]) {
-      delete tripItems[String(tripId)];
-      await AsyncStorage.setItem(TRIP_ITEMS_KEY, JSON.stringify(tripItems));
-    }
-
-    return true;
-  } catch (error) {
-    console.log("deleteTrip error:", error);
-    throw error;
-  }
+  return `${displayHour}:${displayMinute} ${suffix}`;
 }
 
 export async function getTripItems(tripId) {
   try {
-    const raw = await AsyncStorage.getItem(TRIP_ITEMS_KEY);
-    const allItems = raw ? JSON.parse(raw) : {};
-    return allItems[String(tripId)] || [];
+    const key = getTripKey(String(tripId));
+    const data = await AsyncStorage.getItem(key);
+
+    if (!data) return [];
+
+    const parsed = JSON.parse(data);
+    return Array.isArray(parsed) ? parsed : [];
   } catch (error) {
     console.log("getTripItems error:", error);
     return [];
   }
 }
 
+export async function getTripItemById(tripId, itemId) {
+  try {
+    const items = await getTripItems(tripId);
+    return items.find((item) => String(item.id) === String(itemId)) || null;
+  } catch (error) {
+    console.log("getTripItemById error:", error);
+    return null;
+  }
+}
+
 export async function saveTripItems(tripId, items) {
   try {
-    const raw = await AsyncStorage.getItem(TRIP_ITEMS_KEY);
-    const allItems = raw ? JSON.parse(raw) : {};
-    allItems[String(tripId)] = items;
-    await AsyncStorage.setItem(TRIP_ITEMS_KEY, JSON.stringify(allItems));
+    const key = getTripKey(String(tripId));
+    await AsyncStorage.setItem(key, JSON.stringify(items));
+    return items;
   } catch (error) {
     console.log("saveTripItems error:", error);
     throw error;
@@ -78,22 +60,51 @@ export async function saveTripItems(tripId, items) {
 export async function upsertTripItem(tripId, item) {
   try {
     const items = await getTripItems(tripId);
-    const existingIndex = items.findIndex(
-      (x) => String(x.id) === String(item.id)
+
+    const safeItem = {
+      ...item,
+      id: item?.id ? String(item.id) : createItemId(),
+    };
+
+    const index = items.findIndex(
+      (existingItem) => String(existingItem.id) === String(safeItem.id)
     );
 
-    let updated;
-    if (existingIndex >= 0) {
-      updated = [...items];
-      updated[existingIndex] = item;
+    let nextItems;
+
+    if (index >= 0) {
+      nextItems = [...items];
+      nextItems[index] = safeItem;
     } else {
-      updated = [...items, item];
+      nextItems = [...items, safeItem];
     }
 
-    await saveTripItems(tripId, updated);
-    return item;
+    await saveTripItems(tripId, nextItems);
+    return safeItem;
   } catch (error) {
     console.log("upsertTripItem error:", error);
     throw error;
   }
+}
+
+export async function deleteTripItem(tripId, itemId) {
+  try {
+    const items = await getTripItems(tripId);
+
+    const filteredItems = items.filter(
+      (item) => String(item.id) !== String(itemId)
+    );
+
+    await saveTripItems(tripId, filteredItems);
+  } catch (error) {
+    console.log("deleteTripItem error:", error);
+    throw error;
+  }
+}
+
+export async function uploadTripAttachment(tripId, itemId, attachment) {
+  return {
+    ...attachment,
+    downloadURL: attachment?.downloadURL || attachment?.uri || "",
+  };
 }

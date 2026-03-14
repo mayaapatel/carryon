@@ -211,29 +211,26 @@ export default function TripItemDetails() {
     }
   }
 
-  async function onDelete() {
-    if (!tripId || !item?.id) return;
+async function onDelete() {
+  if (!tripId || !item?.id) return;
 
-    Alert.alert("Delete item", "Are you sure you want to delete this item?", [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Delete",
-        style: "destructive",
-        onPress: async () => {
-          try {
-            await deleteTripItem(String(tripId), String(item.id));
-            router.replace({
-              pathname: "/tripitinerary",
-              params: { tripId: String(tripId) },
-            });
-          } catch (error) {
-            console.log("Delete item error:", error);
-            Alert.alert("Error", "Could not delete item.");
-          }
-        },
+  Alert.alert("Delete item", "Are you sure you want to delete this item?", [
+    { text: "Cancel", style: "cancel" },
+    {
+      text: "Delete",
+      style: "destructive",
+      onPress: async () => {
+        try {
+          await deleteTripItem(String(tripId), String(item.id));
+          router.back();
+        } catch (error) {
+          console.log("Delete item error:", error);
+          Alert.alert("Error", "Could not delete item.");
+        }
       },
-    ]);
-  }
+    },
+  ]);
+}
 
   async function addPhotoFromLibrary() {
     try {
