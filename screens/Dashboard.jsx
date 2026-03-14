@@ -113,7 +113,8 @@ export default function Dashboard() {
     });
   };
 
-  const onPastTripsArrowPress = () => router.push("/pasttriplist");
+  const onPastTripsPress = () => router.push("/pasttriplist");
+  const onTravelStatsPress = () => router.push("/travelhistory");
   const onCreateTripPress = () => router.push("/createtrip");
   const onUpcomingPress = () => router.push("/upcoming");
   const onInvitesPress = () => router.push("/invites");
@@ -196,7 +197,10 @@ export default function Dashboard() {
               >
                 <View style={styles.tripCardLeft}>
                   {trip.imageUrl ? (
-                    <Image source={{ uri: trip.imageUrl }} style={styles.tripThumb} />
+                    <Image
+                      source={{ uri: trip.imageUrl }}
+                      style={styles.tripThumb}
+                    />
                   ) : (
                     <View style={styles.tripThumbPlaceholder}>
                       <Ionicons name="airplane" size={22} color="#9CA3AF" />
@@ -232,11 +236,12 @@ export default function Dashboard() {
           <Text style={styles.sectionTitle}>Past Trips</Text>
 
           <TouchableOpacity
-            onPress={onPastTripsArrowPress}
-            style={styles.pastArrowBtn}
+            onPress={onPastTripsPress}
+            style={styles.viewPastTripsBtn}
             activeOpacity={0.75}
           >
-            <Ionicons name="chevron-forward" size={18} color="#111827" />
+            <Text style={styles.viewPastTripsText}>View All</Text>
+            <Ionicons name="chevron-forward" size={16} color="#111827" />
           </TouchableOpacity>
         </View>
 
@@ -249,34 +254,48 @@ export default function Dashboard() {
             <Text style={styles.emptyPastTripsText}>No past trips yet</Text>
           </View>
         ) : (
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.circlesRow}
-          >
-            {pastTrips.slice(0, 7).map((t) => (
-              <TouchableOpacity
-                key={t.id}
-                onPress={() => onOpenTrip(t)}
-                style={styles.tripCircleBtn}
-                activeOpacity={0.85}
-              >
-                <View style={styles.circleShadowWrap}>
-                  {t.imageUrl ? (
-                    <Image source={{ uri: t.imageUrl }} style={styles.tripCircleImg} />
-                  ) : (
-                    <View style={styles.tripCirclePlaceholder}>
-                      <Ionicons name="airplane" size={22} color="#9CA3AF" />
-                    </View>
-                  )}
-                </View>
+          <>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.circlesRow}
+            >
+              {pastTrips.slice(0, 7).map((t) => (
+                <TouchableOpacity
+                  key={t.id}
+                  onPress={() => onOpenTrip(t)}
+                  style={styles.tripCircleBtn}
+                  activeOpacity={0.85}
+                >
+                  <View style={styles.circleShadowWrap}>
+                    {t.imageUrl ? (
+                      <Image
+                        source={{ uri: t.imageUrl }}
+                        style={styles.tripCircleImg}
+                      />
+                    ) : (
+                      <View style={styles.tripCirclePlaceholder}>
+                        <Ionicons name="airplane" size={22} color="#9CA3AF" />
+                      </View>
+                    )}
+                  </View>
 
-                <Text style={styles.tripCircleLabel} numberOfLines={1}>
-                  {t.title || t.location || "Trip"}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
+                  <Text style={styles.tripCircleLabel} numberOfLines={1}>
+                    {t.title || t.location || "Trip"}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+
+            <TouchableOpacity
+              onPress={onTravelStatsPress}
+              style={styles.travelStatsBtn}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="stats-chart-outline" size={16} color={BLUE} />
+              <Text style={styles.travelStatsBtnText}>View Travel Stats</Text>
+            </TouchableOpacity>
+          </>
         )}
 
         <TouchableOpacity
@@ -487,15 +506,21 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
   },
-  pastArrowBtn: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+  viewPastTripsBtn: {
+    flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
+    gap: 4,
+    paddingHorizontal: 10,
+    height: 30,
+    borderRadius: 15,
     borderWidth: 1,
     borderColor: "rgba(17,24,39,0.15)",
     backgroundColor: "#fff",
+  },
+  viewPastTripsText: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#111827",
   },
 
   circlesRow: {
@@ -540,6 +565,22 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "600",
     color: "#111827",
+  },
+
+  travelStatsBtn: {
+    marginTop: 6,
+    marginBottom: 4,
+    alignSelf: "flex-start",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingVertical: 6,
+    paddingHorizontal: 2,
+  },
+  travelStatsBtnText: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: BLUE,
   },
 
   pastTripsState: {
