@@ -569,4 +569,4 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     letterSpacing: 1.2,
   },
-});++++++++++++++++++++++++++6654
+});
