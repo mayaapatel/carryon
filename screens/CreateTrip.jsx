@@ -118,16 +118,20 @@ export default function CreateTrip() {
       };
 
       const tripRef = collection(db, "users", user.uid, "trips");
-      const docRef = await addDoc(tripRef, tripData);
+      const tripDocRef = await addDoc(tripRef, tripData);
 
-      await addDoc(collection(db, "users", user.uid, "journals"), {
-        tripId: docRef.id,
-        createdAt: Timestamp.now(),
-      });
+      // Create journal with its own auto-generated ID and capture it
+      const journalDocRef = await addDoc(
+        collection(db, "users", user.uid, "journals"),
+        {
+          tripId: tripDocRef.id,
+          createdAt: Timestamp.now(),
+        }
+      );
 
       if (withGroup) {
         await addDoc(collection(db, "groupchats"), {
-          tripId: docRef.id,
+          tripId: tripDocRef.id,
           members: [user.uid],
           createdAt: Timestamp.now(),
         });
@@ -136,7 +140,8 @@ export default function CreateTrip() {
       router.replace({
         pathname: "/maintrip",
         params: {
-          tripId: docRef.id,
+          tripId: tripDocRef.id,
+          journalId: journalDocRef.id, // pass the real journal doc ID separately
           title: tripTitle,
         },
       });

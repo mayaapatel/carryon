@@ -31,6 +31,7 @@ export default function MainTrip() {
   const params = useLocalSearchParams();
 
   const tripId = params.tripId ? String(params.tripId) : null;
+  const journalId = params.journalId ? String(params.journalId) : null;
   const tripTitle = params.title ? String(params.title) : "Trip";
 
   const tiles = useMemo(
@@ -83,12 +84,16 @@ export default function MainTrip() {
     });
   };
 
-  const onExpenses = () => console.log("Expenses");
+  const onWallet = () => 
+    router.push({
+      pathname: "/wallet",
+      params: { tripId },
+    });
 
   const onJournal = () =>
     router.push({
       pathname: "/journal",
-      params: { tripId },
+      params: { tripId, journalId },
     });
 
   const onItinerary = () =>
@@ -245,8 +250,8 @@ export default function MainTrip() {
           <Text style={styles.btnText}>Trip Itinerary</Text>
         </Pressable>
 
-        <Pressable onPress={onExpenses} style={styles.btn}>
-          <Text style={styles.btnText}>Expenses</Text>
+        <Pressable onPress={onWallet} style={styles.btn}>
+          <Text style={styles.btnText}>Wallet</Text>
         </Pressable>
 
         <Pressable onPress={onJournal} style={styles.btn}>
