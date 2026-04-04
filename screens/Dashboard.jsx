@@ -1,5 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useRouter } from "expo-router";
+import { getAuth } from "firebase/auth";
 import { collection, getDocs } from "firebase/firestore";
 import { useCallback, useMemo, useState } from "react";
 import {
@@ -16,6 +17,8 @@ import {
   View,
 } from "react-native";
 import { auth, db } from "../firebaseConfig";
+
+const user = getAuth().currentUser;
 
 const BLUE = "#3F63F3";
 
@@ -124,6 +127,13 @@ export default function Dashboard() {
   const onCreateTripPress = () => router.push("/createtrip");
   const onUpcomingPress = () => router.push("/upcoming");
   const onInvitesPress = () => router.push("/invites");
+  
+  const onSettingsPress = () => 
+    router.push({
+      pathname: "/settings",
+      params: {  userId: user.uid },
+    });
+
   const onBackPress = () => router.back();
 
   return (
@@ -326,6 +336,14 @@ export default function Dashboard() {
           activeOpacity={0.9}
         >
           <Text style={styles.createBtnText}>invites</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          onPress={onSettingsPress}
+          style={styles.createBtn}
+          activeOpacity={0.9}
+        >
+          <Text style={styles.createBtnText}>Settings</Text>
         </TouchableOpacity>
 
         <View style={{ height: 24 }} />

@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
     Alert,
     Animated,
@@ -18,7 +18,7 @@ import {
     TouchableOpacity,
     View,
 } from "react-native";
-import { Circle, Defs, Line, LinearGradient, Stop, Svg } from "react-native-svg";
+import { Circle, Line, Svg } from "react-native-svg";
 
 import {
     addDoc,
@@ -42,121 +42,92 @@ const PAD_B = 24;
 
 // Currencies loaded dynamically from API — no hardcoded list needed
 
-// ─── budget chart: single dot at budget value ────────────────────────────────
-function BudgetChart({ budget, spent }) {
-  const plotW = CHART_W - PAD_L - PAD_R;
+// ─── budget chart ────────────────────────────────────────────────────────────
+function BudgetChart({ budget, spent, remaining }) {
+  const plotW = CHART_W - PAD_L - PAD_R - 36;
   const plotH = CHART_H - PAD_T - PAD_B;
+  const maxVal = Math.max(budget, spent, remaining, 1);
 
-  // Show 2 points: $0 on the left, budget on the right
-  const maxVal = Math.max(budget, 1);
-  const toY = (v) => PAD_T + plotH - (v / maxVal) * plotH;
-  const toX = (pct) => PAD_L + pct * plotW;
+  const magnitude = Math.pow(10, Math.floor(Math.log10(maxVal)));
+  const niceMax = Math.ceil(maxVal / magnitude) * magnitude;
 
-  const x0 = toX(0);
-  const x1 = toX(1);
-  const yBudget = toY(budget);
-  const ySpent = toY(spent);
-  const y0 = toY(0);
+  const tickCount = 5;
+  const tickStep = niceMax / (tickCount - 1);
+  const ticks = Array.from({ length: tickCount }, (_, i) => {
+    const val = Math.round(tickStep * i);
+    return { val, y: PAD_T + plotH - (val / niceMax) * plotH, key: `tick-${i}` };
+  });
 
-  // Y-axis ticks
-  const ticks = [0, 0.25, 0.5, 0.75, 1].map((pct) => ({
-    val: Math.round(maxVal * pct),
-    y: toY(maxVal * pct),
-  }));
+  const toY = (v) => PAD_T + plotH - (v / niceMax) * plotH;
+
+  // 3 bars: total budget, major expenses, remaining
+  const barCount = budget > 0 ? (spent > 0 ? 3 : 1) : 0;
+  const barW = Math.min(plotW * 0.22, 50);
+  const gap = plotW * 0.06;
+  const totalBarsW = barW * (barCount || 1) + gap * Math.max((barCount || 1) - 1, 0);
+  const startX = PAD_L + 36 + (plotW - totalBarsW) / 2;
+
+  const bars = [
+    { val: budget, color: "#3F63F3", label: "Total", show: budget > 0 },
+    { val: spent, color: "#f97316", label: "Pre-booked", show: spent > 0 },
+    { val: remaining, color: "#22c55e", label: "Remaining", show: budget > 0 },
+  ].filter((b) => b.show);
+
+  const baseY = toY(0);
 
   return (
     <View style={cs.wrap}>
       <Text style={cs.title}>Budget Overview</Text>
+      <View style={{ width: CHART_W, height: CHART_H }}>
+        <Svg width={CHART_W} height={CHART_H} style={{ position: "absolute" }}>
+          {/* grid lines */}
+          {ticks.map((t) => (
+            <Line key={t.key} x1={PAD_L + 36} y1={t.y} x2={CHART_W - PAD_R} y2={t.y} stroke="#f0f0f0" strokeWidth="1" />
+          ))}
 
-      <Svg width={CHART_W} height={CHART_H}>
-        <Defs>
-          <LinearGradient id="budgetGrad" x1="0" y1="0" x2="0" y2="1">
-            <Stop offset="0" stopColor="#3F63F3" stopOpacity="0.18" />
-            <Stop offset="1" stopColor="#3F63F3" stopOpacity="0" />
-          </LinearGradient>
-        </Defs>
+          {/* dynamic bars */}
+          {bars.map((b, i) => {
+            const cx = startX + i * (barW + gap) + barW / 2;
+            return (
+              <React.Fragment key={b.label}>
+                <Line x1={cx} y1={toY(b.val)} x2={cx} y2={baseY} stroke={b.color} strokeWidth={barW} strokeOpacity="0.18" />
+                <Circle cx={cx} cy={toY(b.val)} r="6" fill={b.color} />
+                <Circle cx={cx} cy={toY(b.val)} r="3" fill="#fff" />
+              </React.Fragment>
+            );
+          })}
 
-        {/* grid lines */}
+          {/* baseline */}
+          <Line x1={PAD_L + 36} y1={baseY} x2={CHART_W - PAD_R} y2={baseY} stroke="#ddd" strokeWidth="1.5" />
+        </Svg>
+
+        {/* y-axis labels — positioned as absolutely placed Text */}
         {ticks.map((t) => (
-          <Line
-            key={t.val}
-            x1={PAD_L}
-            y1={t.y}
-            x2={CHART_W - PAD_R}
-            y2={t.y}
-            stroke="#f0f0f0"
-            strokeWidth="1"
-          />
+          <Text key={t.key} style={[cs.yLabel, { top: t.y - 7 }]}>
+            {t.val >= 10000 ? `$${(t.val / 1000).toFixed(0)}k` : `$${t.val.toLocaleString()}`}
+          </Text>
         ))}
 
-        {/* baseline */}
-        <Line
-          x1={PAD_L} y1={y0}
-          x2={CHART_W - PAD_R} y2={y0}
-          stroke="#e0e0e0" strokeWidth="1.5"
-        />
-
-        {/* budget reference line (dashed) */}
-        {budget > 0 && (
-          <Line
-            x1={PAD_L} y1={yBudget}
-            x2={CHART_W - PAD_R} y2={yBudget}
-            stroke="#3F63F3" strokeWidth="1.5"
-            strokeDasharray="6,4"
-            strokeOpacity="0.5"
-          />
-        )}
-
-        {/* spent bar line */}
-        {spent > 0 && (
-          <Line
-            x1={x0} y1={ySpent}
-            x2={x1} y2={ySpent}
-            stroke="#f97316" strokeWidth="2"
-            strokeOpacity="0.7"
-          />
-        )}
-
-        {/* budget dot */}
-        {budget > 0 && (
-          <>
-            <Circle cx={x1} cy={yBudget} r="8" fill="#3F63F3" fillOpacity="0.15" />
-            <Circle cx={x1} cy={yBudget} r="5" fill="#3F63F3" />
-          </>
-        )}
-
-        {/* spent dot */}
-        {spent > 0 && (
-          <>
-            <Circle cx={x0 + plotW / 2} cy={ySpent} r="8" fill="#f97316" fillOpacity="0.15" />
-            <Circle cx={x0 + plotW / 2} cy={ySpent} r="5" fill="#f97316" />
-          </>
-        )}
-      </Svg>
+        {/* x-axis labels */}
+        {bars.map((b, i) => (
+          <Text key={b.label} style={[cs.xLabel, { left: startX + i * (barW + gap), width: barW, top: baseY + 6 }]}>
+            {b.label}
+          </Text>
+        ))}
+      </View>
 
       {/* legend */}
       <View style={cs.legend}>
-        <View style={cs.legendItem}>
-          <View style={[cs.legendDot, { backgroundColor: "#3F63F3" }]} />
-          <Text style={cs.legendLabel}>Budget ${budget.toLocaleString()}</Text>
-        </View>
-        {spent > 0 && (
-          <View style={cs.legendItem}>
-            <View style={[cs.legendDot, { backgroundColor: "#f97316" }]} />
-            <Text style={cs.legendLabel}>Spent ${spent.toLocaleString()}</Text>
+        {bars.map((b) => (
+          <View key={b.label} style={cs.legendItem}>
+            <View style={[cs.legendDot, { backgroundColor: b.color }]} />
+            <Text style={cs.legendLabel}>{b.label} ${b.val.toLocaleString()}</Text>
           </View>
+        ))}
+        {budget === 0 && (
+          <Text style={{ fontSize: 12, color: "#bbb", fontStyle: "italic" }}>Set a budget to see your overview</Text>
         )}
       </View>
-
-      {/* y-axis labels */}
-      {ticks.map((t) => (
-        <Text
-          key={t.val}
-          style={[cs.yLabel, { top: t.y - 7 }]}
-        >
-          ${t.val >= 1000 ? `${(t.val / 1000).toFixed(0)}k` : t.val}
-        </Text>
-      ))}
     </View>
   );
 }
@@ -167,6 +138,7 @@ export default function WalletScreen() {
   const { tripId } = useLocalSearchParams();
 
   const [budget, setBudget] = useState(0);
+  const [tripDays, setTripDays] = useState(1);
   const [majorExpenses, setMajorExpenses] = useState([]);
   const [currencies, setCurrencies] = useState([]);
   const [selectedCurrency, setSelectedCurrency] = useState({ code: "JPY", label: "Japanese Yen" });
@@ -193,11 +165,17 @@ export default function WalletScreen() {
         const data = await res.json();
         // data is { "aed": "UAE Dirham", "ars": "Argentine Peso", ... }
         const list = Object.entries(data)
+          .filter(([code, label]) =>
+            // only 3-letter codes, proper string labels, exclude crypto/tokens
+            /^[a-z]{3}$/.test(code) &&
+            typeof label === "string" &&
+            label.length > 2 &&
+            code !== "usd"
+          )
           .map(([code, label]) => ({
             code: code.toUpperCase(),
-            label: typeof label === "string" ? label : code.toUpperCase(),
+            label,
           }))
-          .filter((c) => c.code !== "USD") // USD is the base
           .sort((a, b) => a.label.localeCompare(b.label));
         setCurrencies(list);
       } catch {
@@ -208,11 +186,16 @@ export default function WalletScreen() {
           );
           const data2 = await res2.json();
           const list2 = Object.entries(data2)
+            .filter(([code, label]) =>
+              /^[a-z]{3}$/.test(code) &&
+              typeof label === "string" &&
+              label.length > 2 &&
+              code !== "usd"
+            )
             .map(([code, label]) => ({
               code: code.toUpperCase(),
-              label: typeof label === "string" ? label : code.toUpperCase(),
+              label,
             }))
-            .filter((c) => c.code !== "USD")
             .sort((a, b) => a.label.localeCompare(b.label));
           setCurrencies(list2);
         } catch {
@@ -225,13 +208,23 @@ export default function WalletScreen() {
     fetchCurrencyList();
   }, []);
 
-  // ── load trip budget ──────────────────────────────────────────────────────
+  // ── load trip budget + dates ──────────────────────────────────────────────
   useEffect(() => {
     if (!tripId) return;
     const user = auth.currentUser;
     if (!user) return;
     getDoc(doc(db, "users", user.uid, "trips", String(tripId)))
-      .then((snap) => { if (snap.exists()) setBudget(snap.data().budget || 0); })
+      .then((snap) => {
+        if (!snap.exists()) return;
+        const data = snap.data();
+        setBudget(data.budget || 0);
+        if (data.startDate && data.endDate) {
+          const start = data.startDate.toDate();
+          const end = data.endDate.toDate();
+          const days = Math.max(1, Math.round((end - start) / (1000 * 60 * 60 * 24)));
+          setTripDays(days);
+        }
+      })
       .catch(console.error);
   }, [tripId]);
 
@@ -282,8 +275,10 @@ export default function WalletScreen() {
     Animated.timing(fadeAnim, { toValue: 1, duration: 400, useNativeDriver: true }).start();
   }, []);
 
-  const totalSpent = majorExpenses.reduce((s, e) => s + (e.cost || 0), 0);
-  const pctUsed = budget > 0 ? Math.min((totalSpent / budget) * 100, 100) : 0;
+  const totalMajorSpent = majorExpenses.reduce((s, e) => s + (e.cost || 0), 0);
+  const remainingBudget = Math.max(budget - totalMajorSpent, 0);
+  const dailyBudget = remainingBudget > 0 && tripDays > 0 ? Math.round(remainingBudget / tripDays) : 0;
+  const pctUsed = budget > 0 ? Math.min((totalMajorSpent / budget) * 100, 100) : 0;
 
   const formatRate = (rate) => {
     if (rate === null || rate === undefined) return "—";
@@ -343,15 +338,18 @@ export default function WalletScreen() {
           <View style={s.card}>
             <Text style={s.cardTitle}>Daily Budget</Text>
             <Text style={s.cardBig}>
-              ${totalSpent.toFixed(0)}
-              <Text style={s.cardBigSub}>/{budget > 0 ? budget.toLocaleString() : "—"}</Text>
+              ${dailyBudget > 0 ? dailyBudget.toLocaleString() : "—"}
+              <Text style={s.cardBigSub}>/day</Text>
+            </Text>
+            <Text style={s.cardSub}>
+              ${remainingBudget.toLocaleString()} left after major expenses
             </Text>
             {budget > 0 && (
               <>
                 <View style={s.progressTrack}>
                   <View style={[s.progressFill, { width: `${pctUsed}%` }]} />
                 </View>
-                <Text style={s.cardSub}>{(100 - pctUsed).toFixed(0)}% of budget left</Text>
+                <Text style={s.cardSub}>{(100 - pctUsed).toFixed(0)}% of ${budget.toLocaleString()} remaining</Text>
               </>
             )}
           </View>
@@ -375,7 +373,7 @@ export default function WalletScreen() {
         </ScrollView>
 
         {/* ── chart ── */}
-        <BudgetChart budget={budget} spent={totalSpent} />
+        <BudgetChart budget={budget} spent={totalMajorSpent} remaining={remainingBudget} />
 
         {/* ── major expenses ── */}
         <View style={s.majorHeader}>
@@ -533,6 +531,7 @@ const cs = StyleSheet.create({
   },
   title: { fontSize: 16, fontWeight: "700", color: "#111", marginBottom: 8 },
   yLabel: { position: "absolute", left: 4, fontSize: 10, color: "#bbb" },
+  xLabel: { position: "absolute", fontSize: 10, color: "#888", textAlign: "center", fontWeight: "600" },
   legend: { flexDirection: "row", gap: 16, marginTop: 8 },
   legendItem: { flexDirection: "row", alignItems: "center", gap: 6 },
   legendDot: { width: 8, height: 8, borderRadius: 4 },
