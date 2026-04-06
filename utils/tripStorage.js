@@ -1,4 +1,3 @@
-import * as FileSystem from "expo-file-system";
 import {
   collection,
   deleteDoc,
@@ -8,148 +7,351 @@ import {
   serverTimestamp,
   setDoc,
 } from "firebase/firestore";
-import { auth, db } from "../firebaseConfig";
+import { deleteObject, getDownloadURL, ref, uploadBytes } from "firebase/storage";
+import { auth, db, storage } from "../firebaseConfig";
 
-function requireUser() {
-  const user = auth.currentUser;
-  if (!user) {
-    throw new Error("You must be logged in.");
+function createItemId() {
+  return `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
+function createPictureId() {
+  return `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
+function getCurrentUid() {
+  const uid = auth.currentUser?.uid;
+  if (!uid) {
+    throw new Error("No authenticated user found.");
   }
-  return user;
+  return uid;
 }
 
-function itemDocRef(uid, tripId, itemId) {
-  return doc(db, "users", uid, "trips", tripId, "itinerary", itemId);
+function getItineraryCollectionRef(tripId) {
+  const uid = getCurrentUid();
+  return collection(db, "users", uid, "trips", String(tripId), "itinerary");
 }
 
-function itineraryCollectionRef(uid, tripId) {
-  return collection(db, "users", uid, "trips", tripId, "itinerary");
+function getItineraryItemDocRef(tripId, itemId) {
+  const uid = getCurrentUid();
+  return doc(db, "users", uid, "trips", String(tripId), "itinerary", String(itemId));
 }
 
-function sanitizeName(name) {
-  return String(name || "file").replace(/[^\w.\-]+/g, "_");
+function getPicturesCollectionRef(tripId, itemId) {
+  const uid = getCurrentUid();
+  return collection(
+    db,
+    "users",
+    uid,
+    "trips",
+    String(tripId),
+    "itinerary",
+    String(itemId),
+    "pictures"
+  );
 }
 
-async function ensureDirExists(dir) {
-  const info = await FileSystem.getInfoAsync(dir);
-  if (!info.exists) {
-    await FileSystem.makeDirectoryAsync(dir, { intermediates: true });
-  }
+function getPictureDocRef(tripId, itemId, pictureId) {
+  const uid = getCurrentUid();
+  return doc(
+    db,
+    "users",
+    uid,
+    "trips",
+    String(tripId),
+    "itinerary",
+    String(itemId),
+    "pictures",
+    String(pictureId)
+  );
 }
 
-export function formatTime(dateOrHour, maybeMinute) {
-  let hour;
-  let minute;
+function getStoragePath(tripId, itemId, pictureId, filename = "photo.jpg") {
+  const uid = getCurrentUid();
+  const safeName = String(filename).replace(/[^\w.\-]/g, "_");
+  return `users/${uid}/trips/${tripId}/itinerary/${itemId}/pictures/${pictureId}/${safeName}`;
+}
 
-  if (dateOrHour instanceof Date) {
-    hour = dateOrHour.getHours();
-    minute = dateOrHour.getMinutes();
-  } else {
-    hour = Number(dateOrHour ?? 0);
-    minute = Number(maybeMinute ?? 0);
-  }
+function isRemoteUri(uri) {
+  return typeof uri === "string" && /^https?:\/\//i.test(uri);
+}
 
-  const normalizedHour = hour % 12 || 12;
-  const ampm = hour >= 12 ? "PM" : "AM";
-  const paddedMinute = String(minute).padStart(2, "0");
+async function uriToBlob(uri) {
+  const response = await fetch(uri);
+  return await response.blob();
+}
 
-  return `${normalizedHour}:${paddedMinute} ${ampm}`;
+function serializePictureDoc(pictureDoc) {
+  const pictureData = pictureDoc.data() || {};
+  return {
+    id: pictureDoc.id,
+    ...pictureData,
+  };
+}
+
+function sortPicturesByCreatedAt(pictures) {
+  return [...pictures].sort((a, b) => {
+    const aSeconds = a?.createdAt?.seconds || 0;
+    const bSeconds = b?.createdAt?.seconds || 0;
+    return aSeconds - bSeconds;
+  });
+}
+
+export function formatTime(date) {
+  if (!date) return "";
+
+  const hours = date.getHours();
+  const minutes = date.getMinutes();
+
+  const suffix = hours >= 12 ? "PM" : "AM";
+  const displayHour = hours % 12 === 0 ? 12 : hours % 12;
+  const displayMinute = String(minutes).padStart(2, "0");
+
+  return `${displayHour}:${displayMinute} ${suffix}`;
 }
 
 export async function getTripItems(tripId) {
-  const user = requireUser();
-  const snapshot = await getDocs(itineraryCollectionRef(user.uid, tripId));
+  try {
+    const snapshot = await getDocs(getItineraryCollectionRef(tripId));
 
-  return snapshot.docs.map((docSnap) => ({
-    id: docSnap.id,
-    ...docSnap.data(),
-  }));
+    const items = [];
+
+    for (const itineraryDoc of snapshot.docs) {
+      const itineraryData = itineraryDoc.data() || {};
+      const picturesSnapshot = await getDocs(
+        getPicturesCollectionRef(tripId, itineraryDoc.id)
+      );
+
+      const attachments = sortPicturesByCreatedAt(
+        picturesSnapshot.docs.map(serializePictureDoc)
+      );
+
+      items.push({
+        id: itineraryDoc.id,
+        ...itineraryData,
+        attachments,
+      });
+    }
+
+    return items;
+  } catch (error) {
+    console.log("getTripItems error:", error);
+    return [];
+  }
 }
 
 export async function getTripItemById(tripId, itemId) {
-  const user = requireUser();
-  const snap = await getDoc(itemDocRef(user.uid, tripId, itemId));
+  try {
+    const itemRef = getItineraryItemDocRef(tripId, itemId);
+    const itemSnap = await getDoc(itemRef);
 
-  if (!snap.exists()) return null;
+    if (!itemSnap.exists()) {
+      return null;
+    }
 
-  return {
-    id: snap.id,
-    ...snap.data(),
-  };
+    const itemData = itemSnap.data() || {};
+    const picturesSnapshot = await getDocs(getPicturesCollectionRef(tripId, itemId));
+
+    const attachments = sortPicturesByCreatedAt(
+      picturesSnapshot.docs.map(serializePictureDoc)
+    );
+
+    return {
+      id: itemSnap.id,
+      ...itemData,
+      attachments,
+    };
+  } catch (error) {
+    console.log("getTripItemById error:", error);
+    return null;
+  }
+}
+
+export async function saveTripItems(tripId, items) {
+  try {
+    const savedItems = [];
+
+    for (const item of items || []) {
+      const saved = await upsertTripItem(tripId, item);
+      savedItems.push(saved);
+    }
+
+    return savedItems;
+  } catch (error) {
+    console.log("saveTripItems error:", error);
+    throw error;
+  }
 }
 
 export async function upsertTripItem(tripId, item) {
-  const user = requireUser();
+  try {
+    const itemId = item?.id ? String(item.id) : createItemId();
+    const itemRef = getItineraryItemDocRef(tripId, itemId);
 
-  const itemId =
-    item?.id?.toString?.() ||
-    `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    const {
+      attachments = [],
+      dateObject,
+      ...itemFields
+    } = item || {};
 
-  const refToUse = itemDocRef(user.uid, tripId, itemId);
+    const safeItem = {
+      ...itemFields,
+      id: itemId,
+      updatedAt: serverTimestamp(),
+    };
 
-  const safeAttachments = Array.isArray(item?.attachments)
-    ? item.attachments.map((attachment) => ({
-        ...attachment,
-        id: String(attachment.id),
-      }))
-    : [];
+    const existingSnap = await getDoc(itemRef);
+    if (!existingSnap.exists()) {
+      safeItem.createdAt = serverTimestamp();
+    }
 
-  const existingSnap = await getDoc(refToUse);
-  const existingData = existingSnap.exists() ? existingSnap.data() : null;
+    await setDoc(itemRef, safeItem, { merge: true });
 
-  const payload = {
-    ...item,
-    id: itemId,
-    attachments: safeAttachments,
-    updatedAt: serverTimestamp(),
-    createdAt: existingData?.createdAt || item?.createdAt || serverTimestamp(),
-  };
+    const currentPicturesSnap = await getDocs(getPicturesCollectionRef(tripId, itemId));
+    const existingPictureIds = currentPicturesSnap.docs.map((docSnap) => docSnap.id);
+    const nextPictureIds = (attachments || []).map((attachment) => String(attachment.id));
 
-  await setDoc(refToUse, payload, { merge: true });
+    const pictureIdsToDelete = existingPictureIds.filter(
+      (existingId) => !nextPictureIds.includes(existingId)
+    );
 
-  return itemId;
+    for (const pictureId of pictureIdsToDelete) {
+      const pictureRef = getPictureDocRef(tripId, itemId, pictureId);
+      const pictureSnap = await getDoc(pictureRef);
+
+      if (pictureSnap.exists()) {
+        const pictureData = pictureSnap.data() || {};
+        if (pictureData.storagePath) {
+          try {
+            await deleteObject(ref(storage, pictureData.storagePath));
+          } catch (storageError) {
+            console.log("delete storage object error:", storageError);
+          }
+        }
+      }
+
+      await deleteDoc(pictureRef);
+    }
+
+    for (const attachment of attachments || []) {
+      if (!attachment?.id) continue;
+
+      const pictureRef = getPictureDocRef(tripId, itemId, attachment.id);
+
+      await setDoc(
+        pictureRef,
+        {
+          id: String(attachment.id),
+          name: attachment.name || "Photo",
+          type: attachment.type || "image",
+          uri: attachment.uri || "",
+          downloadURL: attachment.downloadURL || attachment.uri || "",
+          mimeType: attachment.mimeType || "",
+          storagePath: attachment.storagePath || "",
+          updatedAt: serverTimestamp(),
+          createdAt: attachment.createdAt || serverTimestamp(),
+        },
+        { merge: true }
+      );
+    }
+
+    return await getTripItemById(tripId, itemId);
+  } catch (error) {
+    console.log("upsertTripItem error:", error);
+    throw error;
+  }
 }
 
 export async function deleteTripItem(tripId, itemId) {
-  const user = requireUser();
-  await deleteDoc(itemDocRef(user.uid, tripId, itemId));
+  try {
+    const picturesSnapshot = await getDocs(getPicturesCollectionRef(tripId, itemId));
+
+    for (const pictureDoc of picturesSnapshot.docs) {
+      const pictureData = pictureDoc.data() || {};
+
+      if (pictureData.storagePath) {
+        try {
+          await deleteObject(ref(storage, pictureData.storagePath));
+        } catch (storageError) {
+          console.log("delete picture from storage error:", storageError);
+        }
+      }
+
+      await deleteDoc(pictureDoc.ref);
+    }
+
+    await deleteDoc(getItineraryItemDocRef(tripId, itemId));
+  } catch (error) {
+    console.log("deleteTripItem error:", error);
+    throw error;
+  }
 }
 
-export async function persistTripAttachmentLocally(tripId, itemId, attachment) {
-  if (!attachment?.uri) {
-    throw new Error("Attachment is missing a local URI.");
+export async function uploadTripAttachment(tripId, itemId, attachment) {
+  try {
+    const safeItemId = itemId ? String(itemId) : createItemId();
+    const pictureId = attachment?.id ? String(attachment.id) : createPictureId();
+
+    if (isRemoteUri(attachment?.downloadURL || attachment?.uri)) {
+      const existingRemote = attachment.downloadURL || attachment.uri;
+
+      const pictureDoc = {
+        id: pictureId,
+        name: attachment?.name || "Photo",
+        type: attachment?.type || "image",
+        uri: existingRemote,
+        downloadURL: existingRemote,
+        mimeType: attachment?.mimeType || "",
+        storagePath: attachment?.storagePath || "",
+      };
+
+      await setDoc(
+        getPictureDocRef(tripId, safeItemId, pictureId),
+        {
+          ...pictureDoc,
+          updatedAt: serverTimestamp(),
+          createdAt: attachment?.createdAt || serverTimestamp(),
+        },
+        { merge: true }
+      );
+
+      return pictureDoc;
+    }
+
+    const blob = await uriToBlob(attachment.uri);
+    const storagePath = getStoragePath(
+      tripId,
+      safeItemId,
+      pictureId,
+      attachment?.name || "photo.jpg"
+    );
+
+    const storageRef = ref(storage, storagePath);
+    await uploadBytes(storageRef, blob);
+    const downloadURL = await getDownloadURL(storageRef);
+
+    const pictureDoc = {
+      id: pictureId,
+      name: attachment?.name || "Photo",
+      type: attachment?.type || "image",
+      uri: attachment?.uri || "",
+      downloadURL,
+      mimeType: attachment?.mimeType || "",
+      storagePath,
+    };
+
+    await setDoc(
+      getPictureDocRef(tripId, safeItemId, pictureId),
+      {
+        ...pictureDoc,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      },
+      { merge: true }
+    );
+
+    return pictureDoc;
+  } catch (error) {
+    console.log("uploadTripAttachment error:", error);
+    throw error;
   }
-
-  const user = requireUser();
-
-  const baseDir =
-    (FileSystem.documentDirectory || FileSystem.cacheDirectory) +
-    `tripAttachments/${user.uid}/${tripId}/${itemId}/`;
-
-  await ensureDirExists(baseDir);
-
-  const safeName = sanitizeName(
-    attachment.name || `${attachment.type || "file"}-${Date.now()}`
-  );
-
-  const destinationUri = `${baseDir}${Date.now()}-${safeName}`;
-
-  const alreadyThere = attachment.uri === destinationUri;
-
-  if (!alreadyThere) {
-    await FileSystem.copyAsync({
-      from: attachment.uri,
-      to: destinationUri,
-    });
-  }
-
-  return {
-    id: String(attachment.id),
-    type: attachment.type || "document",
-    name: attachment.name || safeName,
-    mimeType: attachment.mimeType || "application/octet-stream",
-    uri: destinationUri,
-    localUri: destinationUri,
-    isLocalPersisted: true,
-  };
 }

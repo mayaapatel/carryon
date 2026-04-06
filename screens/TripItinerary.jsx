@@ -1,8 +1,8 @@
-
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useMemo, useState } from "react";
 import {
+  Image,
   Pressable,
   SafeAreaView,
   ScrollView,
@@ -44,6 +44,16 @@ function getCategoryLabel(value) {
 function getAttachmentCount(item) {
   if (!Array.isArray(item?.attachments)) return 0;
   return item.attachments.length;
+}
+
+function getFirstImage(item) {
+  if (!Array.isArray(item?.attachments)) return null;
+  return (
+    item.attachments.find(
+      (attachment) =>
+        attachment?.type === "image" && (attachment?.downloadURL || attachment?.uri)
+    ) || null
+  );
 }
 
 export default function TripItinerary() {
@@ -134,13 +144,13 @@ export default function TripItinerary() {
 
               {dateItems.map((item) => {
                 const attachmentCount = getAttachmentCount(item);
+                const firstImage = getFirstImage(item);
 
                 return (
                   <Pressable
                     key={item.id}
                     style={styles.card}
                     onPress={() => {
-                      console.log("Opening item:", item.id, "trip:", tripId);
                       router.push({
                         pathname: "/tripitemdetails",
                         params: {
@@ -163,6 +173,16 @@ export default function TripItinerary() {
 
                       <Ionicons name="chevron-forward" size={20} color="#8A8A8A" />
                     </View>
+
+                    {firstImage ? (
+                      <View style={styles.previewImageWrap}>
+                        <Image
+                          source={{ uri: firstImage.downloadURL || firstImage.uri }}
+                          style={styles.previewImage}
+                          resizeMode="cover"
+                        />
+                      </View>
+                    ) : null}
 
                     {!!item.location && (
                       <View style={styles.detailRow}>
@@ -272,6 +292,18 @@ const styles = StyleSheet.create({
   cardMeta: {
     fontSize: 13,
     color: "#777",
+  },
+  previewImageWrap: {
+    width: "100%",
+    height: 140,
+    borderRadius: 12,
+    overflow: "hidden",
+    backgroundColor: "#EEE",
+    marginBottom: 10,
+  },
+  previewImage: {
+    width: "100%",
+    height: "100%",
   },
   detailRow: {
     flexDirection: "row",

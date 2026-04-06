@@ -396,7 +396,7 @@ export default function AddActivity() {
       }
 
       resetAllForms();
-
+      
       router.replace({
         pathname: "/tripitinerary",
         params: { tripId },
@@ -565,7 +565,13 @@ export default function AddActivity() {
             {currentForm.attachments.map((item) => (
               <View key={item.id} style={styles.attachmentCard}>
                 {item.type === "image" ? (
-                  <Image source={{ uri: item.uri }} style={styles.attachmentImage} />
+                  <View style={styles.attachmentImageWrap}>
+                    <Image
+                      source={{ uri: item.downloadURL || item.uri }}
+                      style={styles.attachmentImage}
+                      resizeMode="cover"
+                    />
+                  </View>
                 ) : (
                   <View style={styles.docPreview}>
                     <Ionicons name="document-text-outline" size={28} color={BLUE} />
@@ -678,7 +684,8 @@ const styles = StyleSheet.create({
   cameraButton: { width: 44, height: 44, borderRadius: 10, borderWidth: 2, borderColor: BLUE, alignItems: "center", justifyContent: "center", backgroundColor: "#fff" },
   attachmentsRow: { paddingBottom: 14, gap: 10 },
   attachmentCard: { width: 110, backgroundColor: "#fff", borderWidth: 1, borderColor: BORDER, borderRadius: 12, padding: 8, marginRight: 10, position: "relative" },
-  attachmentImage: { width: "100%", height: 68, borderRadius: 8, backgroundColor: "#EEE", marginBottom: 6 },
+  attachmentImageWrap: { width: "100%", height: 68, borderRadius: 8, overflow: "hidden", backgroundColor: "#EEE", marginBottom: 6 },
+  attachmentImage: { width: "100%", height: "100%" },
   docPreview: { width: "100%", height: 68, borderRadius: 8, backgroundColor: "#EEF2FF", marginBottom: 6, alignItems: "center", justifyContent: "center" },
   attachmentName: { fontSize: 12, color: TEXT },
   removeAttachmentButton: { position: "absolute", top: -6, right: -6, backgroundColor: "#fff", borderRadius: 999 },
