@@ -152,7 +152,7 @@ export default function TripItinerary() {
                     style={styles.card}
                     onPress={() => {
                       router.push({
-                        pathname: "/activitydetails",
+                        pathname: "/tripitemdetails",
                         params: {
                           tripId: String(tripId),
                           itemId: String(item.id),
