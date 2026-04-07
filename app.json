@@ -48,8 +48,7 @@
         }
       ],
       "expo-asset",
-      "@react-native-community/datetimepicker",
-      "@rnmapbox/maps"
+      "@react-native-community/datetimepicker"
     ],
     "experiments": {
       "typedRoutes": true,
