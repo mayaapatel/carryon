@@ -181,7 +181,7 @@ export default function JournalScreen() {
             <Ionicons name="camera" size={22} color={pendingImages.length >= 4 ? "#ccc" : "#4F6BFF"} />
           </TouchableOpacity>
           <TextInput style={s.textInput} placeholder="Write the entry here" placeholderTextColor="#aaa" value={text} onChangeText={setText} multiline />
-          <TouchableOpacity style={[s.submitBtn, !canSubmit && s.submitBtnDisabled]} onPress={submitEntry} disabled={!canSubmit}>
+          <TouchableOpacity style={[s.submitBtn]} onPress={submitEntry}>
             <Ionicons name="arrow-up" size={20} color="#fff" />
           </TouchableOpacity>
         </View>
