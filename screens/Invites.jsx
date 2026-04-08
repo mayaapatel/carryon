@@ -73,7 +73,7 @@ export default function InvitesScreen() {
     try {
       
       if (invite.tripData) {
-        await addDoc(collection(db, "users", currentUser.uid, "trips"), {
+        await addDoc(collection(db, "users", user.uid, "trips"), {
           ...invite.tripData,
           createdAt: serverTimestamp(),
         });
@@ -81,11 +81,11 @@ export default function InvitesScreen() {
 
       
       await updateDoc(doc(db, "groupchats", invite.chatId), {
-        members: arrayUnion(currentUser.uid),
+        members: arrayUnion(user.uid),
       });
 
       
-      await deleteDoc(doc(db, "users", currentUser.uid, "invites", invite.id));
+      await deleteDoc(doc(db, "users", user.uid, "invites", invite.id));
 
       
       router.push({ pathname: "/chat", params: { chatId: invite.chatId } });
@@ -99,7 +99,7 @@ export default function InvitesScreen() {
   const handleDecline = async (invite) => {
     setProcessing(invite.id);
     try {
-      await deleteDoc(doc(db, "users", currentUser.uid, "invites", invite.id));
+      await deleteDoc(doc(db, "users", user.uid, "invites", invite.id));
     } catch (e) {
       console.error("Error declining invite:", e);
     } finally {
