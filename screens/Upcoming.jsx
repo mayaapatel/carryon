@@ -9,11 +9,10 @@ import {
   StatusBar,
   StyleSheet,
   Text,
-  TouchableOpacity,
-  View,
+  View
 } from "react-native";
 
-import { collection, getDocs, query, where, } from "firebase/firestore";
+import { collection, getDocs } from "firebase/firestore";
 import { auth, db } from "../firebaseConfig";
 
 const BLUE = "#4967E8";
@@ -29,11 +28,6 @@ const TRIP_COLORS = [
 const MONTHS = [
   "January", "February", "March", "April", "May", "June",
   "July", "August", "September", "October", "November", "December",
-];
-
-const SHORT_MONTHS = [
-  "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
 ];
 
 function parseDate(ts) {
@@ -66,7 +60,6 @@ export default function UpcomingScreen() {
     const fetchTrips = async () => {
       try {
         const user = auth.currentUser;
-        if (!user) return;
         const snapshot = await getDocs(collection(db, "users", user.uid, "trips"));
         const fetched = snapshot.docs.map((doc, i) => ({
           id: doc.id,
@@ -145,8 +138,7 @@ export default function UpcomingScreen() {
   return (
     <SafeAreaView style={styles.safe}>
       <StatusBar barStyle="dark-content" />
-
-      {/* Header */}
+      
       <View style={styles.header}>
         <Pressable onPress={() => router.back()} style={styles.iconButton} hitSlop={8}>
           <Ionicons name="chevron-back" size={24} color={TEXT} />
@@ -275,33 +267,7 @@ export default function UpcomingScreen() {
                   </View>
                 </View>
 
-                
-                <View style={styles.tripActions}>
-                  {trip.withGroup && (
-                    <TouchableOpacity
-                      style={styles.actionBtn}
-                      onPress={async () => {
-                        const q = query(collection(db, "groupchats"), where("tripId", "==", trip.id));
-                        const snapshot = await getDocs(q);
-                        if (!snapshot.empty) {
-                          const chatId = snapshot.docs[0].id;
-                          router.push({ pathname: "/chat", params: { chatId } });
-                        }
-                      }}
-                    >
-                      <Ionicons name="chatbubbles-outline" size={22} color={BLUE} />
-                      <Text style={styles.actionLabel}>Group Chat</Text>
-                    </TouchableOpacity>
-                  )}
-
-                  <TouchableOpacity
-                    style={styles.actionBtn}
-                    onPress={() => router.push({ pathname: "/preparation", params: { tripId: trip.id } })}
-                  >
-                    <Ionicons name="clipboard-outline" size={22} color={BLUE} />
-                    <Text style={styles.actionLabel}>Preparation</Text>
-                  </TouchableOpacity>
-                </View>
+              
               </View>
             ))}
           </ScrollView>
