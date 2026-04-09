@@ -152,12 +152,10 @@ export default function Dashboard() {
   
   const onSettingsPress = () => {
     console.log("setting")
-    if (user){
-      router.push({
+    router.push({
       pathname: "/settings",
       params: { userId: user.uid },
     });
-    }
   }
   
     
