@@ -13,13 +13,20 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
-  View
+  View,
 } from "react-native";
 import { auth, db } from "../firebaseConfig";
 
 const user = getAuth().currentUser;
 
 const BLUE = "#3F63F3";
+const BG = "#F5F7FF";
+const CARD = "#FFFFFF";
+const BORDER = "#E0E7FF";
+const TEXT = "#1F2937";
+const MUTED = "#6B7280";
+const ICON = "#94A3B8";
+const OVERLAY = "rgba(255,255,255,0.85)";
 
 function getTimestampMillis(value) {
   if (!value) return 0;
@@ -149,22 +156,20 @@ export default function Dashboard() {
   const onCreateTripPress = () => router.push("/createtrip");
   const onUpcomingPress = () => router.push("/upcoming");
   const onInvitesPress = () => router.push("/invites");
-  
+
   const onSettingsPress = () => {
-    console.log("setting")
+    console.log("setting");
     router.push({
       pathname: "/settings",
-      params: { userId: user.uid },
+      params: { userId: user?.uid },
     });
-  }
-  
-    
+  };
 
   const onBackPress = () => router.back();
 
   return (
     <SafeAreaView style={styles.safe}>
-      <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
+      <StatusBar barStyle="dark-content" backgroundColor={BG} />
 
       <ScrollView
         contentContainerStyle={styles.scroll}
@@ -176,7 +181,7 @@ export default function Dashboard() {
             style={styles.iconButton}
             activeOpacity={0.7}
           >
-            <Ionicons name="chevron-back" size={24} color="#111827" />
+            <Ionicons name="chevron-back" size={24} color={TEXT} />
           </TouchableOpacity>
         </View>
 
@@ -267,7 +272,7 @@ export default function Dashboard() {
                       />
                     ) : (
                       <View style={styles.tripThumbPlaceholder}>
-                        <Ionicons name="airplane" size={22} color="#9CA3AF" />
+                        <Ionicons name="airplane" size={22} color={ICON} />
                       </View>
                     )}
                   </View>
@@ -290,7 +295,7 @@ export default function Dashboard() {
                     )}
                   </View>
 
-                  <Ionicons name="chevron-forward" size={18} color="#6B7280" />
+                  <Ionicons name="chevron-forward" size={18} color={MUTED} />
                 </TouchableOpacity>
               );
             })}
@@ -306,7 +311,7 @@ export default function Dashboard() {
             activeOpacity={0.75}
           >
             <Text style={styles.viewPastTripsText}>View All</Text>
-            <Ionicons name="chevron-forward" size={16} color="#111827" />
+            <Ionicons name="chevron-forward" size={16} color={TEXT} />
           </TouchableOpacity>
         </View>
 
@@ -348,7 +353,7 @@ export default function Dashboard() {
                         />
                       ) : (
                         <View style={styles.tripCirclePlaceholder}>
-                          <Ionicons name="airplane" size={22} color="#9CA3AF" />
+                          <Ionicons name="airplane" size={22} color={ICON} />
                         </View>
                       )}
                     </View>
@@ -377,7 +382,7 @@ export default function Dashboard() {
           style={styles.createBtn}
           activeOpacity={0.9}
         >
-          <Text style={styles.createBtnText}>CREATE TRIP!</Text>
+          <Text style={styles.createBtnText}>Create Trip</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -385,7 +390,7 @@ export default function Dashboard() {
           style={styles.createBtn}
           activeOpacity={0.9}
         >
-          <Text style={styles.createBtnText}>upcoming</Text>
+          <Text style={styles.createBtnText}>Upcoming</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -393,7 +398,7 @@ export default function Dashboard() {
           style={styles.createBtn}
           activeOpacity={0.9}
         >
-          <Text style={styles.createBtnText}>invites</Text>
+          <Text style={styles.createBtnText}>Invites</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -413,7 +418,7 @@ export default function Dashboard() {
 const styles = StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: "#ffffff",
+    backgroundColor: "#DCE6FF",
   },
   scroll: {
     paddingHorizontal: 18,
@@ -432,6 +437,9 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     alignItems: "center",
     justifyContent: "center",
+    backgroundColor: "#C9D7FF",
+    borderWidth: 1,
+    borderColor: "#B4C6FF",
   },
 
   titleWrap: {
@@ -440,16 +448,16 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   title: {
-    fontSize: 40,
-    letterSpacing: 2,
-    color: BLUE,
-    fontWeight: "600",
+    fontSize: 38,
+    letterSpacing: 1.5,
+    color: "#3F63F3",
+    fontWeight: "700",
   },
   subtitle: {
     marginTop: 6,
     fontSize: 12,
-    letterSpacing: 2,
-    color: BLUE,
+    letterSpacing: 1.2,
+    color: "#6B7AF7",
     fontWeight: "500",
   },
 
@@ -472,20 +480,22 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 10,
-    backgroundColor: "rgba(255,255,255,0.75)",
+    backgroundColor: "rgba(255,255,255,0.9)",
     borderWidth: 1,
-    borderColor: "rgba(17,24,39,0.12)",
+    borderColor: "#B4C6FF",
   },
   heroLabelText: {
     fontSize: 16,
-    fontWeight: "800",
-    color: "rgba(17,24,39,0.85)",
+    fontWeight: "700",
+    color: "#3F63F3",
   },
 
   heroLoadingWrap: {
     height: 185,
     borderRadius: 14,
-    backgroundColor: "#F3F4F6",
+    backgroundColor: "#C9D7FF",
+    borderWidth: 1,
+    borderColor: "#B4C6FF",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -493,20 +503,22 @@ const styles = StyleSheet.create({
   noMainTripCard: {
     height: 185,
     borderRadius: 14,
-    backgroundColor: "#F3F4F6",
+    backgroundColor: "#C9D7FF",
+    borderWidth: 1,
+    borderColor: "#B4C6FF",
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 20,
   },
   noMainTripText: {
     fontSize: 18,
-    fontWeight: "700",
-    color: "#111827",
+    fontWeight: "600",
+    color: "#1F2937",
   },
   noMainTripSubtext: {
     marginTop: 8,
     fontSize: 14,
-    color: "#6B7280",
+    color: "#4B5563",
     textAlign: "center",
   },
 
@@ -515,9 +527,9 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   sectionTitle: {
-    fontSize: 15,
-    fontWeight: "700",
-    color: "#111827",
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#1F2937",
   },
 
   tripsState: {
@@ -529,7 +541,7 @@ const styles = StyleSheet.create({
   },
   emptyTripsText: {
     fontSize: 13,
-    color: "#6B7280",
+    color: "#4B5563",
     fontWeight: "500",
   },
 
@@ -537,10 +549,10 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   tripCard: {
-    backgroundColor: "#fff",
+    backgroundColor: "#D4DEFF", // darker than background → visible layer
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: "#E5E7EB",
+    borderColor: "#B4C6FF",
     padding: 12,
     flexDirection: "row",
     alignItems: "center",
@@ -558,7 +570,7 @@ const styles = StyleSheet.create({
     width: 58,
     height: 58,
     borderRadius: 12,
-    backgroundColor: "#F3F4F6",
+    backgroundColor: "#C2D0FF",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -568,18 +580,18 @@ const styles = StyleSheet.create({
   },
   tripCardTitle: {
     fontSize: 15,
-    fontWeight: "700",
+    fontWeight: "600",
     color: "#111827",
   },
   tripCardSubtext: {
     marginTop: 4,
     fontSize: 13,
-    color: "#6B7280",
+    color: "#4B5563",
   },
   tripCardMeta: {
     marginTop: 4,
     fontSize: 12,
-    color: "#9CA3AF",
+    color: "#6B7280",
   },
 
   pastHeader: {
@@ -596,13 +608,13 @@ const styles = StyleSheet.create({
     height: 30,
     borderRadius: 15,
     borderWidth: 1,
-    borderColor: "rgba(17,24,39,0.15)",
-    backgroundColor: "#fff",
+    borderColor: "#B4C6FF",
+    backgroundColor: "#C9D7FF",
   },
   viewPastTripsText: {
     fontSize: 12,
     fontWeight: "600",
-    color: "#111827",
+    color: "#3F63F3",
   },
 
   circlesRow: {
@@ -618,9 +630,11 @@ const styles = StyleSheet.create({
     width: 62,
     height: 62,
     borderRadius: 31,
-    backgroundColor: "#fff",
+    backgroundColor: "#D4DEFF",
+    borderWidth: 1,
+    borderColor: "#B4C6FF",
     shadowColor: "#000",
-    shadowOpacity: 0.12,
+    shadowOpacity: 0.08,
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 4 },
     elevation: 4,
@@ -638,14 +652,14 @@ const styles = StyleSheet.create({
     width: 62,
     height: 62,
     borderRadius: 31,
-    backgroundColor: "#F3F4F6",
+    backgroundColor: "#C2D0FF",
     alignItems: "center",
     justifyContent: "center",
   },
   tripCircleLabel: {
     marginTop: 8,
     fontSize: 12,
-    fontWeight: "600",
+    fontWeight: "500",
     color: "#111827",
   },
 
@@ -661,8 +675,8 @@ const styles = StyleSheet.create({
   },
   travelStatsBtnText: {
     fontSize: 13,
-    fontWeight: "700",
-    color: BLUE,
+    fontWeight: "600",
+    color: "#3F63F3",
   },
 
   pastTripsState: {
@@ -674,22 +688,28 @@ const styles = StyleSheet.create({
   },
   emptyPastTripsText: {
     fontSize: 13,
-    color: "#6B7280",
+    color: "#4B5563",
     fontWeight: "500",
   },
 
   createBtn: {
     marginTop: 18,
     width: "100%",
-    height: 50,
-    borderRadius: 8,
-    backgroundColor: BLUE,
+    height: 52,
+    borderRadius: 12,
+    backgroundColor: "#5A75F5",
     alignItems: "center",
     justifyContent: "center",
+    shadowColor: "#3F63F3",
+    shadowOpacity: 0.18,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 3,
   },
   createBtnText: {
     color: "#ffffff",
-    fontWeight: "800",
-    letterSpacing: 1.2,
+    fontWeight: "700",
+    fontSize: 15,
+    letterSpacing: 0.8,
   },
 });

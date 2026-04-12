@@ -1013,61 +1013,183 @@ async function removeAttachment(attachmentId) {
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: BG },
-  scrollContent: { paddingHorizontal: 20, paddingTop: 8, paddingBottom: 30, backgroundColor: BG },
-  loadingWrap: { flex: 1, alignItems: "center", justifyContent: "center" },
-  loadingText: { fontSize: 16, color: TEXT },
+  safeArea: {
+    flex: 1,
+    backgroundColor: "#DCE6FF",
+  },
 
-  header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 8, marginBottom: 18 },
-  iconButton: { width: 36, height: 36, alignItems: "center", justifyContent: "center" },
-  headerTitle: { fontSize: 20, color: TEXT, fontFamily: "serif" },
+  scrollContent: {
+    paddingHorizontal: 20,
+    paddingTop: 8,
+    paddingBottom: 30,
+  },
 
-  heroScroller: { marginBottom: 14 },
-  heroScrollerContent: { paddingRight: 4 },
+  loadingWrap: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  loadingText: {
+    fontSize: 16,
+    color: "#1F2937",
+  },
+
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginTop: 8,
+    marginBottom: 18,
+  },
+
+  iconButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#C9D7FF",
+    borderWidth: 1,
+    borderColor: "#B4C6FF",
+  },
+
+  headerTitle: {
+    fontSize: 20,
+    color: "#3F63F3",
+    fontWeight: "700",
+  },
+
+  heroScroller: {
+    marginBottom: 14,
+  },
+
+  heroScrollerContent: {
+    paddingRight: 4,
+  },
+
   heroImageWrap: {
     width: SCREEN_WIDTH - 40,
     height: 230,
     marginRight: 10,
     borderRadius: 18,
-    backgroundColor: "#F3F4F6",
+    backgroundColor: "#D4DEFF",
     overflow: "hidden",
     borderWidth: 1,
-    borderColor: BORDER,
+    borderColor: "#B4C6FF",
     alignItems: "center",
     justifyContent: "center",
   },
+
   heroImage: {
     width: "100%",
     height: "100%",
-    backgroundColor: "#E5E7EB",
+    backgroundColor: "#C2D0FF",
   },
 
   noPhotoCard: {
     height: 140,
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: BORDER,
-    backgroundColor: "#fff",
+    borderColor: "#B4C6FF",
+    backgroundColor: "#D4DEFF",
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 14,
     gap: 8,
   },
-  noPhotoText: { color: "#6B7280", fontSize: 14, fontWeight: "600" },
 
-  summaryCard: { backgroundColor: "#fff", borderWidth: 1, borderColor: BORDER, borderRadius: 18, padding: 16, marginBottom: 12 },
-  summaryTop: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 12 },
-  categoryBadge: { backgroundColor: "#EEF2FF", borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6 },
-  categoryBadgeText: { color: BLUE, fontSize: 12, fontWeight: "700" },
-  priceLarge: { fontSize: 20, color: TEXT, fontWeight: "700" },
-  mainTitle: { fontSize: 22, color: TEXT, fontWeight: "700", marginBottom: 12 },
-  summaryRow: { flexDirection: "row", alignItems: "center", marginBottom: 8 },
-  summaryText: { marginLeft: 8, color: "#4B5563", fontSize: 15, flex: 1 },
+  noPhotoText: {
+    color: "#4B5563",
+    fontSize: 14,
+    fontWeight: "600",
+  },
 
-  infoCard: { backgroundColor: "#fff", borderWidth: 1, borderColor: BORDER, borderRadius: 16, padding: 14, marginBottom: 12 },
-  rowBetween: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 8 },
-  infoLabel: { fontSize: 14, fontWeight: "700", color: TEXT, marginBottom: 6 },
-  infoValue: { fontSize: 15, color: TEXT, lineHeight: 22 },
+  summaryCard: {
+    backgroundColor: "#D4DEFF",
+    borderWidth: 1,
+    borderColor: "#B4C6FF",
+    borderRadius: 18,
+    padding: 16,
+    marginBottom: 12,
+  },
+
+  summaryTop: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 12,
+  },
+
+  categoryBadge: {
+    backgroundColor: "#EEF2FF",
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderWidth: 1,
+    borderColor: "#9FB2FF",
+  },
+
+  categoryBadgeText: {
+    color: "#3F63F3",
+    fontSize: 12,
+    fontWeight: "700",
+  },
+
+  priceLarge: {
+    fontSize: 20,
+    color: "#1F2937",
+    fontWeight: "700",
+  },
+
+  mainTitle: {
+    fontSize: 22,
+    color: "#111827",
+    fontWeight: "700",
+    marginBottom: 12,
+  },
+
+  summaryRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+
+  summaryText: {
+    marginLeft: 8,
+    color: "#4B5563",
+    fontSize: 15,
+    flex: 1,
+  },
+
+  infoCard: {
+    backgroundColor: "#D4DEFF",
+    borderWidth: 1,
+    borderColor: "#B4C6FF",
+    borderRadius: 16,
+    padding: 14,
+    marginBottom: 12,
+  },
+
+  rowBetween: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 8,
+  },
+
+  infoLabel: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#1F2937",
+    marginBottom: 6,
+  },
+
+  infoValue: {
+    fontSize: 15,
+    color: "#1F2937",
+    lineHeight: 22,
+  },
 
   editIconButton: {
     width: 30,
@@ -1076,142 +1198,219 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: "#EEF2FF",
+    borderWidth: 1,
+    borderColor: "#9FB2FF",
   },
 
   input: {
     minHeight: 48,
-    borderWidth: 1,
-    borderColor: BORDER,
-    borderRadius: 10,
-    backgroundColor: "#fff",
+    borderWidth: 1.5,
+    borderColor: "#9FB2FF",
+    borderRadius: 12,
+    backgroundColor: "#EEF2FF",
     paddingHorizontal: 12,
     paddingVertical: 12,
     fontSize: 15,
-    color: TEXT,
+    color: "#1F2937",
   },
+
   multilineInput: {
     minHeight: 100,
     textAlignVertical: "top",
   },
 
-  categoryRow: { paddingVertical: 4 },
+  categoryRow: {
+    paddingVertical: 4,
+  },
+
   categoryPill: {
     paddingHorizontal: 14,
     height: 38,
     borderRadius: 20,
-    backgroundColor: "#fff",
+    backgroundColor: "#EEF2FF",
     borderWidth: 1,
-    borderColor: BORDER,
+    borderColor: "#9FB2FF",
     alignItems: "center",
     justifyContent: "center",
     marginRight: 8,
   },
-  categoryPillActive: { backgroundColor: BLUE, borderColor: BLUE },
-  categoryPillText: { color: TEXT, fontSize: 14, fontWeight: "600" },
-  categoryPillTextActive: { color: "#fff" },
 
-  pricePreview: { fontSize: 16, color: TEXT, marginBottom: 4, fontWeight: "600" },
+  categoryPillActive: {
+    backgroundColor: "#5A75F5",
+    borderColor: "#5A75F5",
+  },
+
+  categoryPillText: {
+    color: "#1F2937",
+    fontSize: 14,
+    fontWeight: "600",
+  },
+
+  categoryPillTextActive: {
+    color: "#fff",
+  },
+
+  pricePreview: {
+    fontSize: 16,
+    color: "#1F2937",
+    marginBottom: 4,
+    fontWeight: "600",
+  },
 
   timeButton: {
     height: 48,
-    borderWidth: 1,
-    borderColor: BORDER,
-    borderRadius: 10,
-    backgroundColor: "#fff",
+    borderWidth: 1.5,
+    borderColor: "#9FB2FF",
+    borderRadius: 12,
+    backgroundColor: "#EEF2FF",
     paddingHorizontal: 14,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
   },
-  timeButtonText: { fontSize: 15, color: TEXT },
 
-  attachmentsRow: { paddingTop: 4, paddingBottom: 6 },
+  timeButtonText: {
+    fontSize: 15,
+    color: "#1F2937",
+  },
+
+  attachmentsRow: {
+    paddingTop: 4,
+    paddingBottom: 6,
+  },
+
   attachmentCard: {
     width: 120,
-    backgroundColor: "#fff",
+    backgroundColor: "#EEF2FF",
     borderWidth: 1,
-    borderColor: BORDER,
+    borderColor: "#9FB2FF",
     borderRadius: 12,
     padding: 8,
     marginRight: 10,
     position: "relative",
   },
+
   attachmentImage: {
     width: "100%",
     height: 80,
     borderRadius: 8,
-    backgroundColor: "#EEE",
+    backgroundColor: "#C2D0FF",
     marginBottom: 6,
   },
-  attachmentName: { fontSize: 12, color: TEXT },
-  removeAttachmentButton: { position: "absolute", top: -6, right: -6, backgroundColor: "#fff", borderRadius: 999 },
+
+  attachmentName: {
+    fontSize: 12,
+    color: "#1F2937",
+  },
+
+  removeAttachmentButton: {
+    position: "absolute",
+    top: -6,
+    right: -6,
+    backgroundColor: "#DCE6FF",
+    borderRadius: 999,
+  },
 
   documentRow: {
     flexDirection: "row",
     alignItems: "center",
     borderWidth: 1,
-    borderColor: BORDER,
+    borderColor: "#9FB2FF",
     borderRadius: 12,
     paddingHorizontal: 12,
     paddingVertical: 10,
     marginTop: 8,
+    backgroundColor: "#EEF2FF",
   },
-  documentName: { flex: 1, marginLeft: 8, color: TEXT, fontSize: 14 },
+
+  documentName: {
+    flex: 1,
+    marginLeft: 8,
+    color: "#1F2937",
+    fontSize: 14,
+  },
 
   addAttachmentButton: {
     marginTop: 10,
     height: 42,
     borderRadius: 10,
-    borderWidth: 1,
-    borderColor: BLUE,
-    backgroundColor: "#fff",
+    borderWidth: 1.5,
+    borderColor: "#5A75F5",
+    backgroundColor: "#EEF2FF",
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
   },
-  addAttachmentButtonText: { color: BLUE, fontWeight: "700" },
 
-  editActionRow: { flexDirection: "row", justifyContent: "flex-end", marginTop: 10 },
+  addAttachmentButtonText: {
+    color: "#3F63F3",
+    fontWeight: "700",
+  },
+
+  editActionRow: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    marginTop: 10,
+  },
+
   cancelButton: {
     height: 40,
     paddingHorizontal: 16,
     borderRadius: 10,
-    borderWidth: 1,
-    borderColor: BORDER,
-    backgroundColor: "#fff",
+    borderWidth: 1.5,
+    borderColor: "#9FB2FF",
+    backgroundColor: "#EEF2FF",
     alignItems: "center",
     justifyContent: "center",
     marginRight: 8,
   },
-  cancelButtonText: { color: TEXT, fontSize: 14, fontWeight: "600" },
+
+  cancelButtonText: {
+    color: "#1F2937",
+    fontSize: 14,
+    fontWeight: "600",
+  },
+
   saveButton: {
     height: 40,
     paddingHorizontal: 16,
     borderRadius: 10,
-    backgroundColor: BLUE,
+    backgroundColor: "#5A75F5",
     alignItems: "center",
     justifyContent: "center",
   },
-  saveButtonText: { color: "#fff", fontSize: 14, fontWeight: "700" },
+
+  saveButtonText: {
+    color: "#fff",
+    fontSize: 14,
+    fontWeight: "700",
+  },
 
   deleteButton: {
     marginTop: 6,
     height: 52,
-    borderRadius: 10,
-    backgroundColor: "#fff",
+    borderRadius: 12,
+    backgroundColor: "#FEE2E2",
     borderWidth: 1,
-    borderColor: "#D9534F",
+    borderColor: "#FCA5A5",
     alignItems: "center",
     justifyContent: "center",
   },
-  deleteButtonText: { color: "#D9534F", fontSize: 15, fontWeight: "700" },
+
+  deleteButtonText: {
+    color: "#D9534F",
+    fontSize: 15,
+    fontWeight: "700",
+    letterSpacing: 0.6,
+  },
 
   viewerOverlay: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.96)",
     justifyContent: "center",
   },
+
   viewerCloseButton: {
     position: "absolute",
     top: 55,
@@ -1224,6 +1423,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+
   viewerSlide: {
     width: SCREEN_WIDTH,
     height: SCREEN_HEIGHT,
@@ -1231,10 +1431,12 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     paddingHorizontal: 14,
   },
+
   viewerImage: {
     width: "100%",
     height: "75%",
   },
+
   viewerCounter: {
     position: "absolute",
     bottom: 45,
@@ -1244,6 +1446,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 999,
   },
+
   viewerCounterText: {
     color: "#fff",
     fontSize: 14,

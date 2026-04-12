@@ -279,7 +279,7 @@ export default function PastTripList() {
 const styles = StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: BG,
+    backgroundColor: "#DCE6FF",
   },
 
   header: {
@@ -292,15 +292,20 @@ const styles = StyleSheet.create({
   },
 
   backBtn: {
-    width: 24,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     alignItems: "center",
     justifyContent: "center",
+    backgroundColor: "#C9D7FF",
+    borderWidth: 1,
+    borderColor: "#B4C6FF",
   },
 
   headerTitle: {
     fontSize: 20,
     fontWeight: "700",
-    color: TEXT,
+    color: "#3F63F3",
   },
 
   centerWrap: {
@@ -311,7 +316,8 @@ const styles = StyleSheet.create({
 
   emptyText: {
     fontSize: 15,
-    color: "#6B7280",
+    color: "#4B5563",
+    fontWeight: "500",
   },
 
   scroll: {
@@ -322,9 +328,9 @@ const styles = StyleSheet.create({
   card: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#fff",
+    backgroundColor: "#D4DEFF", // layered blue (NOT white)
     borderWidth: 1,
-    borderColor: BORDER,
+    borderColor: "#B4C6FF",
     borderRadius: 16,
     padding: 12,
     marginBottom: 12,
@@ -336,14 +342,14 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     resizeMode: "cover",
     marginRight: 12,
-    backgroundColor: "#EEE",
+    backgroundColor: "#C2D0FF",
   },
 
   placeholderImage: {
     width: 72,
     height: 72,
     borderRadius: 14,
-    backgroundColor: "#F3F4F6",
+    backgroundColor: "#C2D0FF",
     alignItems: "center",
     justifyContent: "center",
     marginRight: 12,
@@ -357,14 +363,14 @@ const styles = StyleSheet.create({
 
   cardTitle: {
     fontSize: 16,
-    fontWeight: "700",
-    color: TEXT,
+    fontWeight: "600",
+    color: "#111827",
   },
 
   cardDates: {
     marginTop: 4,
     fontSize: 13,
-    color: BLUE,
+    color: "#3F63F3",
     fontWeight: "600",
   },
 });

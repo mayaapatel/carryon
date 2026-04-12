@@ -76,7 +76,7 @@ export default function AddActivity() {
   });
 
   useEffect(() => {
-    if (presetCategory && !editingId) {
+    if (presetCategory && !editingId) { 
       setCategory(presetCategory);
     }
   }, [presetCategory, editingId]);
@@ -650,52 +650,364 @@ export default function AddActivity() {
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: BG },
-  scrollContent: { paddingHorizontal: 20, paddingTop: 8, paddingBottom: 28, backgroundColor: BG },
-  loadingWrap: { flex: 1, alignItems: "center", justifyContent: "center" },
-  loadingText: { fontSize: 16, color: TEXT },
-  header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 8, marginBottom: 18 },
-  iconButton: { width: 34, alignItems: "center", justifyContent: "center" },
-  headerTitle: { fontSize: 18, color: TEXT, fontFamily: "serif" },
-  draftBanner: { backgroundColor: "#EEF2FF", borderColor: "#D9E0FF", borderWidth: 1, borderRadius: 12, paddingVertical: 10, paddingHorizontal: 12, marginBottom: 12 },
-  draftBannerText: { color: BLUE, fontSize: 14, fontWeight: "600" },
-  categoryRow: { paddingBottom: 12, gap: 8 },
-  categoryPill: { paddingHorizontal: 14, height: 38, borderRadius: 20, backgroundColor: "#fff", borderWidth: 1, borderColor: BORDER, alignItems: "center", justifyContent: "center", marginRight: 8 },
-  categoryPillActive: { backgroundColor: BLUE, borderColor: BLUE },
-  categoryPillText: { color: TEXT, fontSize: 14, fontWeight: "600" },
-  categoryPillTextActive: { color: "#fff" },
-  label: { fontSize: 16, color: TEXT, marginBottom: 10, fontFamily: "serif" },
-  input: { height: 52, borderWidth: 1, borderColor: BORDER, borderRadius: 10, backgroundColor: "#fff", paddingHorizontal: 14, fontSize: 15, color: TEXT, marginBottom: 14 },
-  locationWrap: { height: 52, borderWidth: 1, borderColor: BORDER, borderRadius: 26, backgroundColor: "#fff", paddingHorizontal: 14, flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 14 },
-  locationInput: { flex: 1, fontSize: 15, color: TEXT, marginRight: 8 },
-  timeButton: { height: 52, borderWidth: 1, borderColor: BORDER, borderRadius: 10, backgroundColor: "#fff", paddingHorizontal: 14, marginBottom: 16, flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  timeButtonText: { fontSize: 15, color: TEXT },
-  priceHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 6, paddingHorizontal: 8 },
-  priceLabel: { fontSize: 16, color: TEXT, fontWeight: "600" },
-  priceValue: { fontSize: 15, color: "#4C4C4C" },
-  priceRow: { flexDirection: "row", alignItems: "center", marginBottom: 14 },
-  sliderWrap: { flex: 1, marginRight: 14 },
-  cameraButton: { width: 44, height: 44, borderRadius: 10, borderWidth: 2, borderColor: BLUE, alignItems: "center", justifyContent: "center", backgroundColor: "#fff" },
-  attachmentsRow: { paddingBottom: 14, gap: 10 },
-  attachmentCard: { width: 110, backgroundColor: "#fff", borderWidth: 1, borderColor: BORDER, borderRadius: 12, padding: 8, marginRight: 10, position: "relative" },
-  attachmentImage: { width: "100%", height: 68, borderRadius: 8, backgroundColor: "#EEE", marginBottom: 6 },
-  docPreview: { width: "100%", height: 68, borderRadius: 8, backgroundColor: "#EEF2FF", marginBottom: 6, alignItems: "center", justifyContent: "center" },
-  attachmentName: { fontSize: 12, color: TEXT },
-  removeAttachmentButton: { position: "absolute", top: -6, right: -6, backgroundColor: "#fff", borderRadius: 999 },
-  calendarCard: { backgroundColor: "#fff", borderWidth: 1, borderColor: BORDER, borderRadius: 16, paddingHorizontal: 14, paddingTop: 12, paddingBottom: 16 },
-  calendarTopRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 14 },
-  arrowButton: { width: 24, alignItems: "center", justifyContent: "center" },
-  dropdownRow: { flexDirection: "row", alignItems: "center", gap: 8 },
-  fakeDropdownMonth: { minWidth: 70, height: 34, borderWidth: 1, borderColor: BORDER, borderRadius: 8, paddingHorizontal: 10, flexDirection: "row", alignItems: "center", justifyContent: "center", backgroundColor: "#fff" },
-  fakeDropdownYear: { minWidth: 86, height: 34, borderWidth: 1, borderColor: BORDER, borderRadius: 8, paddingHorizontal: 10, flexDirection: "row", alignItems: "center", justifyContent: "center", backgroundColor: "#fff" },
-  dropdownText: { fontSize: 14, color: TEXT },
-  weekRow: { flexDirection: "row", justifyContent: "space-between", marginBottom: 8, paddingHorizontal: 4 },
-  weekText: { width: "14.28%", textAlign: "center", color: "#8D8D8D", fontSize: 12 },
-  daysGrid: { flexDirection: "row", flexWrap: "wrap" },
-  dayCell: { width: "14.28%", aspectRatio: 1, alignItems: "center", justifyContent: "center", borderRadius: 10, marginBottom: 4 },
-  selectedDayCell: { backgroundColor: BLUE },
-  dayText: { fontSize: 17, color: "#2B2B2B" },
-  selectedDayText: { color: "#fff", fontWeight: "600" },
-  createButton: { marginTop: 16, backgroundColor: BLUE, height: 52, borderRadius: 8, alignItems: "center", justifyContent: "center" },
-  createButtonText: { color: "#fff", fontSize: 18, fontFamily: "serif" },
+  safeArea: { 
+    flex: 1, 
+    backgroundColor: "#DCE6FF" 
+  },
+
+  scrollContent: { 
+    paddingHorizontal: 20, 
+    paddingTop: 8, 
+    paddingBottom: 28, 
+  },
+
+  loadingWrap: { 
+    flex: 1, 
+    alignItems: "center", 
+    justifyContent: "center" 
+  },
+
+  loadingText: { 
+    fontSize: 16, 
+    color: "#1F2937" 
+  },
+
+  header: { 
+    flexDirection: "row", 
+    alignItems: "center", 
+    justifyContent: "space-between", 
+    marginTop: 8, 
+    marginBottom: 18 
+  },
+
+  iconButton: { 
+    width: 36, 
+    height: 36,
+    borderRadius: 18,
+    alignItems: "center", 
+    justifyContent: "center",
+    backgroundColor: "#C9D7FF",
+    borderWidth: 1,
+    borderColor: "#B4C6FF",
+  },
+
+  headerTitle: { 
+    fontSize: 18, 
+    color: "#3F63F3", 
+    fontWeight: "700" 
+  },
+
+  draftBanner: { 
+    backgroundColor: "#C9D7FF", 
+    borderColor: "#B4C6FF", 
+    borderWidth: 1, 
+    borderRadius: 12, 
+    paddingVertical: 10, 
+    paddingHorizontal: 12, 
+    marginBottom: 12 
+  },
+
+  draftBannerText: { 
+    color: "#3F63F3", 
+    fontSize: 14, 
+    fontWeight: "600" 
+  },
+
+  categoryRow: { 
+    paddingBottom: 12, 
+    gap: 8 
+  },
+
+  categoryPill: { 
+    paddingHorizontal: 14, 
+    height: 38, 
+    borderRadius: 20, 
+    backgroundColor: "#D4DEFF", 
+    borderWidth: 1, 
+    borderColor: "#B4C6FF", 
+    alignItems: "center", 
+    justifyContent: "center", 
+    marginRight: 8 
+  },
+
+  categoryPillActive: { 
+    backgroundColor: "#5A75F5", 
+    borderColor: "#5A75F5" 
+  },
+
+  categoryPillText: { 
+    color: "#1F2937", 
+    fontSize: 14, 
+    fontWeight: "600" 
+  },
+
+  categoryPillTextActive: { 
+    color: "#fff" 
+  },
+
+  label: { 
+    fontSize: 15, 
+    color: "#111827", // darker → readable
+    marginBottom: 10, 
+    fontWeight: "600" 
+  },
+
+  input: { 
+    height: 52, 
+    borderWidth: 1.5, 
+    borderColor: "#9FB2FF", 
+    borderRadius: 12, 
+    backgroundColor: "#EEF2FF", // lighter than cards
+    paddingHorizontal: 14, 
+    fontSize: 15, 
+    color: "#1F2937", 
+    marginBottom: 14 
+  },
+
+  locationWrap: { 
+    height: 52, 
+    borderWidth: 1.5, 
+    borderColor: "#9FB2FF", 
+    borderRadius: 26, 
+    backgroundColor: "#EEF2FF", 
+    paddingHorizontal: 14, 
+    flexDirection: "row", 
+    alignItems: "center", 
+    justifyContent: "space-between", 
+    marginBottom: 14 
+  },
+
+  locationInput: { 
+    flex: 1, 
+    fontSize: 15, 
+    color: "#1F2937", 
+    marginRight: 8 
+  },
+
+  timeButton: { 
+    height: 52, 
+    borderWidth: 1.5, 
+    borderColor: "#9FB2FF", 
+    borderRadius: 12, 
+    backgroundColor: "#EEF2FF", 
+    paddingHorizontal: 14, 
+    marginBottom: 16, 
+    flexDirection: "row", 
+    alignItems: "center", 
+    justifyContent: "space-between" 
+  },
+
+  timeButtonText: { 
+    fontSize: 15, 
+    color: "#1F2937" 
+  },
+
+  priceHeader: { 
+    flexDirection: "row", 
+    justifyContent: "space-between", 
+    alignItems: "center", 
+    marginBottom: 6, 
+    paddingHorizontal: 8 
+  },
+
+  priceLabel: { 
+    fontSize: 15, 
+    color: "#1F2937", 
+    fontWeight: "600" 
+  },
+
+  priceValue: { 
+    fontSize: 14, 
+    color: "#4B5563" 
+  },
+
+  priceRow: { 
+    flexDirection: "row", 
+    alignItems: "center", 
+    marginBottom: 14 
+  },
+
+  sliderWrap: { 
+    flex: 1, 
+    marginRight: 14 
+  },
+
+  cameraButton: { 
+    width: 44, 
+    height: 44, 
+    borderRadius: 12, 
+    borderWidth: 1.5, 
+    borderColor: "#5A75F5", 
+    alignItems: "center", 
+    justifyContent: "center", 
+    backgroundColor: "#EEF2FF" 
+  },
+
+  attachmentsRow: { 
+    paddingBottom: 14, 
+    gap: 10 
+  },
+
+  attachmentCard: { 
+    width: 110, 
+    backgroundColor: "#D4DEFF", 
+    borderWidth: 1, 
+    borderColor: "#B4C6FF", 
+    borderRadius: 12, 
+    padding: 8, 
+    marginRight: 10, 
+    position: "relative" 
+  },
+
+  attachmentImage: { 
+    width: "100%", 
+    height: 68, 
+    borderRadius: 8, 
+    backgroundColor: "#C2D0FF", 
+    marginBottom: 6 
+  },
+
+  docPreview: { 
+    width: "100%", 
+    height: 68, 
+    borderRadius: 8, 
+    backgroundColor: "#C2D0FF", 
+    marginBottom: 6, 
+    alignItems: "center", 
+    justifyContent: "center" 
+  },
+
+  attachmentName: { 
+    fontSize: 12, 
+    color: "#1F2937" 
+  },
+
+  removeAttachmentButton: { 
+    position: "absolute", 
+    top: -6, 
+    right: -6, 
+    backgroundColor: "#DCE6FF", 
+    borderRadius: 999 
+  },
+
+  calendarCard: { 
+    backgroundColor: "#D4DEFF", 
+    borderWidth: 1, 
+    borderColor: "#B4C6FF", 
+    borderRadius: 16, 
+    paddingHorizontal: 14, 
+    paddingTop: 12, 
+    paddingBottom: 16 
+  },
+
+  calendarTopRow: { 
+    flexDirection: "row", 
+    alignItems: "center", 
+    justifyContent: "space-between", 
+    marginBottom: 14 
+  },
+
+  arrowButton: { 
+    width: 28, 
+    height: 28,
+    borderRadius: 14,
+    alignItems: "center", 
+    justifyContent: "center",
+    backgroundColor: "#C9D7FF",
+  },
+
+  dropdownRow: { 
+    flexDirection: "row", 
+    alignItems: "center", 
+    gap: 8 
+  },
+
+  fakeDropdownMonth: { 
+    minWidth: 70, 
+    height: 34, 
+    borderWidth: 1, 
+    borderColor: "#B4C6FF", 
+    borderRadius: 8, 
+    paddingHorizontal: 10, 
+    flexDirection: "row", 
+    alignItems: "center", 
+    justifyContent: "center", 
+    backgroundColor: "#C9D7FF" 
+  },
+
+  fakeDropdownYear: { 
+    minWidth: 86, 
+    height: 34, 
+    borderWidth: 1, 
+    borderColor: "#B4C6FF", 
+    borderRadius: 8, 
+    paddingHorizontal: 10, 
+    flexDirection: "row", 
+    alignItems: "center", 
+    justifyContent: "center", 
+    backgroundColor: "#C9D7FF" 
+  },
+
+  dropdownText: { 
+    fontSize: 14, 
+    color: "#1F2937" 
+  },
+
+  weekRow: { 
+    flexDirection: "row", 
+    justifyContent: "space-between", 
+    marginBottom: 8, 
+    paddingHorizontal: 4 
+  },
+
+  weekText: { 
+    width: "14.28%", 
+    textAlign: "center", 
+    color: "#6B7280", 
+    fontSize: 12 
+  },
+
+  daysGrid: { 
+    flexDirection: "row", 
+    flexWrap: "wrap" 
+  },
+
+  dayCell: { 
+    width: "14.28%", 
+    aspectRatio: 1, 
+    alignItems: "center", 
+    justifyContent: "center", 
+    borderRadius: 10, 
+    marginBottom: 4 
+  },
+
+  selectedDayCell: { 
+    backgroundColor: "#5A75F5" 
+  },
+
+  dayText: { 
+    fontSize: 16, 
+    color: "#2B2B2B" 
+  },
+
+  selectedDayText: { 
+    color: "#fff", 
+    fontWeight: "600" 
+  },
+
+  createButton: { 
+    marginTop: 16, 
+    backgroundColor: "#5A75F5", 
+    height: 52, 
+    borderRadius: 12, 
+    alignItems: "center", 
+    justifyContent: "center" 
+  },
+
+  createButtonText: { 
+    color: "#fff", 
+    fontSize: 15, 
+    fontWeight: "700",
+    letterSpacing: 0.8,
+  },
 });

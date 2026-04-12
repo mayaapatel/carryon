@@ -597,8 +597,15 @@ const onOpenChat = async () => {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: "#fff" },
-  scroll: { paddingHorizontal: 18, paddingBottom: 10 },
+  safe: { 
+    flex: 1, 
+    backgroundColor: "#DCE6FF" // same as dashboard
+  },
+
+  scroll: { 
+    paddingHorizontal: 18, 
+    paddingBottom: 10 
+  },
 
   emptyWrap: {
     flex: 1,
@@ -608,7 +615,7 @@ const styles = StyleSheet.create({
 
   emptyText: {
     fontSize: 16,
-    color: "#111827",
+    color: "#1F2937",
   },
 
   topRow: {
@@ -631,6 +638,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     marginLeft: 4,
+    backgroundColor: "#C9D7FF",
+    borderWidth: 1,
+    borderColor: "#B4C6FF",
   },
 
   headerTitle: {
@@ -638,7 +648,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
     fontSize: 18,
     fontWeight: "700",
-    color: "#111827",
+    color: "#3F63F3",
     marginHorizontal: 8,
   },
 
@@ -661,18 +671,18 @@ const styles = StyleSheet.create({
     width: "100%",
     height: 185,
     borderRadius: 14,
-    backgroundColor: "#F3F4F6",
+    backgroundColor: "#C9D7FF",
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1,
-    borderColor: "#E5E7EB",
+    borderColor: "#B4C6FF",
   },
 
   heroPlaceholderText: {
     marginTop: 10,
     fontSize: 14,
-    fontWeight: "700",
-    color: "#6B7280",
+    fontWeight: "600",
+    color: "#4B5563",
   },
 
   heroLabelPill: {
@@ -682,21 +692,21 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 10,
-    backgroundColor: "rgba(255,255,255,0.82)",
+    backgroundColor: "rgba(255,255,255,0.9)",
     borderWidth: 1,
-    borderColor: "rgba(17,24,39,0.12)",
+    borderColor: "#B4C6FF",
   },
 
   heroLabelText: {
     fontSize: 13,
-    fontWeight: "800",
-    color: "rgba(17,24,39,0.85)",
+    fontWeight: "700",
+    color: "#3F63F3",
   },
 
   subhead: {
     marginBottom: 12,
     fontSize: 14,
-    color: "rgba(17,24,39,0.75)",
+    color: "#3F63F3",
     fontWeight: "600",
     textAlign: "center",
   },
@@ -714,10 +724,10 @@ const styles = StyleSheet.create({
     height: 110,
     borderRadius: 12,
     overflow: "hidden",
-    backgroundColor: "#F3F4F6",
+    backgroundColor: "#D4DEFF", // same layer as trip cards
     position: "relative",
     borderWidth: 1,
-    borderColor: "#E5E7EB",
+    borderColor: "#B4C6FF",
   },
 
   tileImg: {
@@ -731,13 +741,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
-    backgroundColor: "#F9FAFB",
+    backgroundColor: "#C2D0FF",
   },
 
   placeholderText: {
     fontSize: 12,
-    fontWeight: "700",
-    color: "#6B7280",
+    fontWeight: "600",
+    color: "#4B5563",
   },
 
   labelPill: {
@@ -747,22 +757,22 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 10,
-    backgroundColor: "rgba(255,255,255,0.86)",
+    backgroundColor: "rgba(255,255,255,0.9)",
     borderWidth: 1,
-    borderColor: "rgba(17,24,39,0.12)",
+    borderColor: "#B4C6FF",
   },
 
   labelText: {
     fontSize: 12,
-    fontWeight: "800",
-    color: "rgba(17,24,39,0.85)",
+    fontWeight: "700",
+    color: "#3F63F3",
   },
 
   mainBadge: {
     position: "absolute",
     right: 8,
     bottom: 8,
-    backgroundColor: BLUE,
+    backgroundColor: "#5A75F5", // lighter cohesive blue
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 999,
@@ -771,23 +781,29 @@ const styles = StyleSheet.create({
   mainBadgeText: {
     color: "#fff",
     fontSize: 10,
-    fontWeight: "800",
+    fontWeight: "700",
     letterSpacing: 0.6,
   },
 
   btn: {
     marginTop: 12,
     width: "100%",
-    height: 50,
-    borderRadius: 8,
-    backgroundColor: BLUE,
+    height: 52,
+    borderRadius: 12,
+    backgroundColor: "#5A75F5", // same as dashboard buttons
     alignItems: "center",
     justifyContent: "center",
+    shadowColor: "#3F63F3",
+    shadowOpacity: 0.18,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 3,
   },
 
   btnText: {
     color: "#fff",
-    fontWeight: "800",
-    letterSpacing: 1,
+    fontWeight: "700",
+    fontSize: 15,
+    letterSpacing: 0.8,
   },
 });

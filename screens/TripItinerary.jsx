@@ -213,13 +213,17 @@ export default function TripItinerary() {
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: BG },
+  safeArea: { 
+    flex: 1, 
+    backgroundColor: "#DCE6FF" 
+  },
+
   scrollContent: {
     paddingHorizontal: 20,
     paddingTop: 8,
     paddingBottom: 32,
-    backgroundColor: BG,
   },
+
   header: {
     flexDirection: "row",
     alignItems: "center",
@@ -227,118 +231,143 @@ const styles = StyleSheet.create({
     marginTop: 8,
     marginBottom: 18,
   },
+
   headerIcon: {
-    width: 34,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     alignItems: "center",
     justifyContent: "center",
+    backgroundColor: "#C9D7FF",
+    borderWidth: 1,
+    borderColor: "#B4C6FF",
   },
+
   headerTitle: {
     fontSize: 20,
-    color: TEXT,
-    fontFamily: "serif",
+    color: "#3F63F3",
+    fontWeight: "700",
   },
+
   emptyCard: {
-    backgroundColor: "#fff",
+    backgroundColor: "#D4DEFF",
     borderWidth: 1,
-    borderColor: BORDER,
+    borderColor: "#B4C6FF",
     borderRadius: 16,
     padding: 18,
     alignItems: "center",
   },
+
   emptyTitle: {
     fontSize: 18,
     fontWeight: "700",
-    color: TEXT,
+    color: "#1F2937",
     marginBottom: 6,
   },
+
   emptyText: {
     fontSize: 14,
-    color: "#666",
+    color: "#4B5563",
     textAlign: "center",
   },
+
   section: {
     marginBottom: 18,
   },
+
   sectionTitle: {
     fontSize: 18,
-    color: TEXT,
+    color: "#1F2937",
     marginBottom: 10,
-    fontFamily: "serif",
+    fontWeight: "600",
   },
+
   card: {
-    backgroundColor: "#fff",
+    backgroundColor: "#D4DEFF", // layered card color
     borderWidth: 1,
-    borderColor: BORDER,
+    borderColor: "#B4C6FF",
     borderRadius: 16,
     padding: 14,
     marginBottom: 12,
   },
+
   cardTopRow: {
     flexDirection: "row",
     alignItems: "flex-start",
     justifyContent: "space-between",
     marginBottom: 8,
   },
+
   cardTextWrap: {
     flex: 1,
     marginRight: 10,
   },
+
   cardTitle: {
     fontSize: 17,
-    color: TEXT,
-    fontWeight: "700",
+    color: "#111827",
+    fontWeight: "600",
     marginBottom: 4,
   },
+
   cardMeta: {
     fontSize: 13,
-    color: "#777",
+    color: "#4B5563",
   },
+
   previewImageWrap: {
     width: "100%",
     height: 140,
     borderRadius: 12,
     overflow: "hidden",
-    backgroundColor: "#EEE",
+    backgroundColor: "#C2D0FF",
     marginBottom: 10,
   },
+
   previewImage: {
     width: "100%",
     height: "100%",
   },
+
   detailRow: {
     flexDirection: "row",
     alignItems: "center",
     marginBottom: 10,
   },
+
   detailText: {
     marginLeft: 6,
-    color: "#555",
+    color: "#4B5563",
     fontSize: 14,
     flex: 1,
   },
+
   bottomRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
   },
+
   priceText: {
     fontSize: 15,
-    color: TEXT,
+    color: "#1F2937",
     fontWeight: "600",
   },
+
   attachmentBadge: {
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
     borderWidth: 1,
-    borderColor: "#D7DDFE",
-    backgroundColor: "#F4F6FF",
+    borderColor: "#9FB2FF",
+    backgroundColor: "#EEF2FF",
     borderRadius: 999,
     paddingHorizontal: 10,
     paddingVertical: 5,
   },
+
   attachmentBadgeText: {
-    color: BLUE,
+    color: "#3F63F3",
     fontSize: 12,
     fontWeight: "700",
   },
