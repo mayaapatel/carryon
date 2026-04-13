@@ -22,10 +22,10 @@ import Svg, { Circle, Path } from "react-native-svg";
 import { feature } from "topojson-client";
 import worldData from "world-atlas/countries-110m.json";
 
-import { auth, db } from "../firebaseConfig";
 import { doc, getDoc, serverTimestamp, setDoc } from "firebase/firestore";
+import { auth, db } from "../firebaseConfig";
 
-const GREY = "#FFFFFF";
+const GREY = "#CBD5E1";
 const GREEN = "#22C55E";
 const BLUE = "#3F63F3";
 const DARK = "#0F172A";
@@ -795,12 +795,11 @@ export default function TravelHistory() {
 const styles = StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: "#DCE6FF",
+    backgroundColor: "#F8FAFC",
   },
-
   container: {
     flex: 1,
-    backgroundColor: "#DCE6FF",
+    backgroundColor: "#F8FAFC",
     paddingHorizontal: 18,
   },
 
@@ -810,33 +809,27 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
   },
-
   iconButton: {
     width: 36,
     height: 36,
     borderRadius: 18,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#C9D7FF",
-    borderWidth: 1,
-    borderColor: "#B4C6FF",
   },
 
   header: {
     paddingTop: 4,
     paddingBottom: 14,
   },
-
   title: {
     fontSize: 28,
     fontWeight: "800",
-    color: "#3F63F3",
+    color: DARK,
   },
-
   subtitle: {
     marginTop: 6,
     fontSize: 14,
-    color: "#4B5563",
+    color: "rgba(15,23,42,0.65)",
   },
 
   loadingWrap: {
@@ -845,41 +838,36 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     paddingBottom: 40,
   },
-
   loadingText: {
     marginTop: 12,
     fontSize: 14,
-    color: "#4B5563",
+    color: "rgba(15,23,42,0.65)",
   },
 
   mapWrap: {
     marginBottom: 16,
   },
-
   mapCard: {
-    backgroundColor: "#D4DEFF",
+    backgroundColor: "#FFFFFF",
     borderRadius: 18,
     padding: 12,
     borderWidth: 1,
-    borderColor: "#B4C6FF",
+    borderColor: "#E2E8F0",
   },
-
   mapTopRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     marginBottom: 8,
   },
-
   mapTitle: {
     fontSize: 13,
-    color: "#4B5563",
+    color: "rgba(15,23,42,0.7)",
   },
-
   savingText: {
     fontSize: 12,
     fontWeight: "700",
-    color: "#3F63F3",
+    color: "#2563EB",
   },
 
   ringsGrid: {
@@ -889,104 +877,92 @@ const styles = StyleSheet.create({
     rowGap: 12,
     marginBottom: 14,
   },
-
   ringCard: {
     width: "48%",
-    backgroundColor: "#D4DEFF",
+    backgroundColor: "#FFFFFF",
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: "#B4C6FF",
+    borderColor: "#E2E8F0",
     paddingVertical: 16,
     paddingHorizontal: 12,
     alignItems: "center",
   },
-
   ringWrap: {
-    width: 80,
-    height: 80,
+    width: 76,
+    height: 76,
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 10,
   },
-
   ringCenter: {
     position: "absolute",
     alignItems: "center",
     justifyContent: "center",
   },
-
   ringNumber: {
     fontSize: 18,
     fontWeight: "900",
-    color: "#1F2937",
+    color: DARK,
   },
-
   ringLabel: {
     fontSize: 14,
-    fontWeight: "700",
-    color: "#1F2937",
+    fontWeight: "800",
+    color: DARK,
   },
-
   ringHint: {
     marginTop: 4,
     fontSize: 11,
-    color: "#6B7280",
+    color: "rgba(15,23,42,0.58)",
     textAlign: "center",
   },
-
   tapHint: {
     marginTop: 6,
     fontSize: 11,
     fontWeight: "700",
-    color: "#5A75F5",
+    color: "#8B5CF6",
   },
 
   modalBackdrop: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.4)",
+    backgroundColor: "rgba(2,6,23,0.5)",
     justifyContent: "flex-end",
   },
-
   modalCard: {
     height: "82%",
-    backgroundColor: "#DCE6FF",
+    backgroundColor: "#F8FAFC",
     borderTopLeftRadius: 18,
     borderTopRightRadius: 18,
     paddingHorizontal: 14,
     paddingTop: 12,
     paddingBottom: 18,
   },
-
   modalHeader: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     paddingBottom: 10,
   },
-
   modalTitle: {
     fontSize: 18,
     fontWeight: "900",
-    color: "#1F2937",
+    color: DARK,
   },
-
   modalClose: {
     fontSize: 15,
     fontWeight: "800",
-    color: "#3F63F3",
+    color: "#2563EB",
   },
 
   search: {
-    backgroundColor: "#EEF2FF",
+    backgroundColor: "#FFFFFF",
     borderRadius: 12,
-    borderWidth: 1.5,
-    borderColor: "#9FB2FF",
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
     paddingVertical: 12,
     paddingHorizontal: 12,
     marginBottom: 10,
-    color: "#1F2937",
+    color: DARK,
   },
-
   modalMetaRow: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -994,17 +970,14 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     paddingHorizontal: 2,
   },
-
   modalMeta: {
     fontSize: 13,
-    color: "#4B5563",
+    color: "rgba(15,23,42,0.6)",
   },
-
   modalMetaStrong: {
     fontWeight: "900",
-    color: "#1F2937",
+    color: DARK,
   },
-
   clearBtn: {
     fontSize: 13,
     fontWeight: "800",
@@ -1014,44 +987,105 @@ const styles = StyleSheet.create({
   countryRow: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#EEF2FF",
+    backgroundColor: "#FFFFFF",
     borderRadius: 14,
     paddingVertical: 12,
     paddingHorizontal: 12,
     borderWidth: 1,
-    borderColor: "#9FB2FF",
+    borderColor: "#E2E8F0",
     marginBottom: 8,
   },
-
   countryRowChecked: {
-    borderColor: "#22C55E",
-    backgroundColor: "#DCFCE7",
+    borderColor: "rgba(34,197,94,0.45)",
   },
-
   checkbox: {
     width: 22,
     height: 22,
     borderRadius: 6,
     borderWidth: 2,
-    borderColor: "#9FB2FF",
+    borderColor: "#CBD5E1",
     alignItems: "center",
     justifyContent: "center",
     marginRight: 10,
   },
-
   checkboxChecked: {
     borderColor: "#22C55E",
-    backgroundColor: "#DCFCE7",
+    backgroundColor: "rgba(34,197,94,0.15)",
   },
-
   checkboxTick: {
     fontWeight: "900",
     color: "#16A34A",
+    marginTop: -1,
   },
-
   countryText: {
     fontSize: 14,
     fontWeight: "700",
-    color: "#1F2937",
+    color: DARK,
+  },
+
+  promptBackdrop: {
+    flex: 1,
+    backgroundColor: "rgba(2,6,23,0.38)",
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 18,
+  },
+  promptCard: {
+    width: "100%",
+    backgroundColor: "#FFFFFF",
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 14,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+  },
+  promptHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  promptTitle: {
+    fontSize: 18,
+    fontWeight: "900",
+    color: DARK,
+  },
+  promptSubtitle: {
+    marginTop: 8,
+    marginBottom: 14,
+    fontSize: 13,
+    color: "rgba(15,23,42,0.62)",
+  },
+  wonderList: {
+    gap: 8,
+  },
+  wonderRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderRadius: 14,
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    backgroundColor: "#F8FAFC",
+  },
+  wonderRowChecked: {
+    borderColor: "rgba(139,92,246,0.35)",
+    backgroundColor: "rgba(139,92,246,0.08)",
+  },
+  wonderText: {
+    flex: 1,
+    fontSize: 14,
+    fontWeight: "700",
+    color: DARK,
+  },
+  promptMeta: {
+    marginTop: 14,
+    fontSize: 13,
+    color: "rgba(15,23,42,0.62)",
+  },
+  promptMetaStrong: {
+    fontWeight: "900",
+    color: DARK,
   },
 });
