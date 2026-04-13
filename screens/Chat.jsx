@@ -49,7 +49,7 @@ export default function GroupChatScreen() {
   const [messages, setMessages] = useState([]);
   const [inputText, setInputText] = useState("");
 
-  // Search modal state
+  
   const [showSearch, setShowSearch] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState([]);
@@ -58,7 +58,7 @@ export default function GroupChatScreen() {
 
   const flatListRef = useRef(null);
 
-  // Load chat metadata
+  
   useEffect(() => {
     const loadChatData = async () => {
       try {
@@ -70,7 +70,7 @@ export default function GroupChatScreen() {
         const memberUids = chatData.members || [];
         setTripId(fetchedTripId);
 
-        // Find the trip doc by checking each member
+        
         let foundLocation = "Group Trip";
         let foundTripData = null;
         let foundOwnerId = null;
@@ -89,7 +89,7 @@ export default function GroupChatScreen() {
         setTripData(foundTripData);
         setTripOwnerId(foundOwnerId);
 
-        // Get member usernames
+        
         const memberData = await Promise.all(
           memberUids.map(async (uid) => {
             try {
@@ -114,7 +114,7 @@ export default function GroupChatScreen() {
     if (chatId) loadChatData();
   }, [chatId]);
 
-  // Real-time messages listener
+  
   useEffect(() => {
     if (!chatId) return;
     const q = query(
@@ -144,7 +144,7 @@ export default function GroupChatScreen() {
     }
   };
 
-  // Search users by username
+  
   const handleSearch = async () => {
     if (!searchQuery.trim()) return;
     setSearching(true);
@@ -156,8 +156,8 @@ export default function GroupChatScreen() {
       const snapshot = await getDocs(q);
       const results = snapshot.docs
         .map((d) => ({ uid: d.id, ...d.data() }))
-        .filter((u) => u.uid !== currentUser.uid) // exclude self
-        .filter((u) => !members.find((m) => m.uid === u.uid)); // exclude existing members
+        .filter((u) => u.uid !== currentUser.uid)
+        .filter((u) => !members.find((m) => m.uid === u.uid));
       setSearchResults(results);
     } catch (e) {
       console.error("Search error:", e);
@@ -166,16 +166,16 @@ export default function GroupChatScreen() {
     }
   };
 
-  // Send invite to a user
+  
   const handleSendInvite = async (targetUser) => {
     if (!tripData || !tripId) return;
     setSendingInvite(targetUser.uid);
     try {
-      // Get current user's username
+      
       const currentUserDoc = await getDoc(doc(db, "users", currentUser.uid));
       const currentUsername = currentUserDoc.data()?.username || "Someone";
 
-      // Write invite to target user's invites subcollection
+      
       await addDoc(collection(db, "users", targetUser.uid, "invites"), {
         tripId,
         chatId,
@@ -265,7 +265,7 @@ export default function GroupChatScreen() {
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
       >
-        {/* Header */}
+        
         <View style={styles.header}>
           <Pressable onPress={() => router.back()} style={styles.iconButton} hitSlop={8}>
             <Ionicons name="chevron-back" size={24} color={TEXT} />
@@ -276,7 +276,7 @@ export default function GroupChatScreen() {
               {members.map((m) => m.username).join(", ")}
             </Text>
           </View>
-          {/* Add member button */}
+          
           <Pressable
             onPress={() => setShowSearch(true)}
             style={styles.iconButton}
@@ -286,7 +286,7 @@ export default function GroupChatScreen() {
           </Pressable>
         </View>
 
-        {/* Messages */}
+        
         <FlatList
           ref={flatListRef}
           data={messages}
@@ -299,7 +299,7 @@ export default function GroupChatScreen() {
           }
         />
 
-        {/* Input */}
+        
         <View style={styles.inputRow}>
           <TextInput
             style={styles.input}
@@ -320,7 +320,7 @@ export default function GroupChatScreen() {
         </View>
       </KeyboardAvoidingView>
 
-      {/* Add Member Modal */}
+      
       <Modal visible={showSearch} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
           <View style={styles.modalCard}>
@@ -337,7 +337,7 @@ export default function GroupChatScreen() {
               </Pressable>
             </View>
 
-            {/* Search bar */}
+            
             <View style={styles.searchRow}>
               <TextInput
                 style={styles.searchInput}
@@ -357,7 +357,7 @@ export default function GroupChatScreen() {
               </TouchableOpacity>
             </View>
 
-            {/* Results */}
+            
             {searchResults.length === 0 && !searching && searchQuery.trim() !== "" && (
               <Text style={styles.noResults}>No users found</Text>
             )}

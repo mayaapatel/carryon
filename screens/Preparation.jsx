@@ -9,7 +9,7 @@ import {
 } from "react-native";
 import { auth, db } from "../firebaseConfig";
 
-// weather code → [description, icon]
+
 const WMO = {
   0:["Clear sky","sunny-outline"], 1:["Mainly clear","partly-sunny-outline"],
   2:["Partly cloudy","partly-sunny-outline"], 3:["Overcast","cloud-outline"],
@@ -103,7 +103,7 @@ export default function BeforeYouTravel() {
     });
   }, [tripId]);
 
-  // derived values
+  
   const daysUntil = useMemo(() => {
     if (!startDate) return null;
     const now = new Date(); now.setHours(0,0,0,0);
@@ -123,7 +123,7 @@ export default function BeforeYouTravel() {
     setSearchError(""); setSearching(true); Keyboard.dismiss();
 
     try {
-      // geocode
+      
       const geoData = await fetch(
         `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(`${city}, ${country}`)}&format=json&limit=1&addressdetails=1`,
         { headers: { "User-Agent": "CarryOnTravelApp/1.0" } }
@@ -133,7 +133,7 @@ export default function BeforeYouTravel() {
       const lat = parseFloat(rawLat), lon = parseFloat(rawLon);
       const countryCode = address?.country_code?.toUpperCase() || "";
 
-      // country info
+      
       let cData = null;
       try {
         const c = await fetch(`https://restcountries.com/v3.1/alpha/${countryCode}`).then(r => r.json()).then(j => j[0]);
@@ -144,7 +144,7 @@ export default function BeforeYouTravel() {
         };
       } catch (_) {}
 
-      // local time
+      
       try {
         const tz = await fetch(`https://timeapi.io/api/time/current/coordinate?latitude=${lat}&longitude=${lon}`).then(r => r.json());
         if (tz.dateTime) setLocalTime({
@@ -155,7 +155,7 @@ export default function BeforeYouTravel() {
         });
       } catch (_) { setLocalTime(null); }
 
-      // weather — only if trip is within 16 days
+    
       setWeatherLoading(true); setWeather(null);
       try {
         const now = new Date(); now.setHours(0,0,0,0);
@@ -236,7 +236,7 @@ export default function BeforeYouTravel() {
     <SafeAreaView style={st.safe}>
       <ScrollView contentContainerStyle={st.scroll} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
 
-        {/* header */}
+        
         <View style={st.topRow}>
           <TouchableOpacity onPress={() => router.back()} style={st.backBtn}>
             <Ionicons name="chevron-back" size={24} color="#111827" />
@@ -245,7 +245,7 @@ export default function BeforeYouTravel() {
           <View style={{ width: 36 }} />
         </View>
 
-        {/* search */}
+        
         <View style={st.searchCard}>
           <Text style={st.searchCardTitle}>Where are you going?</Text>
           <View style={st.searchRow}>
@@ -275,7 +275,7 @@ export default function BeforeYouTravel() {
           )}
         </View>
 
-        {/* local info card */}
+        
         {(countryData || localTime) && (
           <View style={st.localInfoCard}>
             <Text style={st.localInfoTitle}>{destination?.country || "Local Info"}</Text>
@@ -290,7 +290,7 @@ export default function BeforeYouTravel() {
           </View>
         )}
 
-        {/* accordion */}
+        
         <Animated.View style={{ opacity: fadeAnim }}>
           <View style={st.stack}>
             {Object.entries(SECTIONS).map(([key, meta]) => {
@@ -312,17 +312,17 @@ export default function BeforeYouTravel() {
 
                   {isOpen && (
                     <View style={st.cardBody}>
-                      {/* documents */}
+                      
                       {key === "documents" && <>
                         {!destination && <Hint text="Search a destination above to load country info." />}
                         <Text style={st.subheading}>📋 Document Checklist</Text>
                         <Checklist sectionKey="documents" />
                       </>}
 
-                      {/* checklist sections */}
+                      
                       {meta.checklist && key !== "documents" && <Checklist sectionKey={key} />}
 
-                      {/* weather */}
+                      
                       {key === "weather" && <>
                         {!destination && <Hint text="Search a destination above to load weather." />}
                         {destination && weatherLoading && <ActivityIndicator size="small" color="#2E5BFF" style={{ marginVertical: 12 }} />}
@@ -356,7 +356,7 @@ export default function BeforeYouTravel() {
                         </>}
                       </>}
 
-                      {/* flights */}
+                      
                       {key === "flights" && <>
                         <Hint text="Flight booking APIs require commercial partnerships. We'll open Google Flights with your trip details pre-filled." />
                         {destination ? (
@@ -394,7 +394,7 @@ export default function BeforeYouTravel() {
           </View>
         </Animated.View>
 
-        {/* bottom stats */}
+        
         <View style={st.bottomArea}>
           <View style={st.statRow}>
             <View style={st.leftStat}>

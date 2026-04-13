@@ -28,7 +28,7 @@ function timeAgo(timestamp) {
   const day = Math.floor(ms / 86400000);
   if (min < 1) return "Just now";
   if (min < 60) return `${min} min ago`;
-  if (hr < 24) return `${hr} hour${hr === 1 ? "" : "s"} ago`;
+  if (hr < 24) return `${hr} hours ago`;
   if (day === 1) return "1 day ago";
   return `${day} days ago`;
 }
@@ -130,7 +130,7 @@ export default function JournalScreen() {
     <SafeAreaView style={s.safe}>
       <StatusBar barStyle="dark-content" />
 
-      {/* header */}
+      
       <View style={s.header}>
         <Pressable onPress={() => router.back()} style={s.iconBtn} hitSlop={8}>
           <Ionicons name="chevron-back" size={24} color="#111827" />
@@ -166,7 +166,7 @@ export default function JournalScreen() {
         )}
       />
 
-      {/* composer */}
+      
       <View style={s.composer}>
         <Text style={s.composerLabel}>Add Journal Entry</Text>
 

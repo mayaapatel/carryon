@@ -177,7 +177,7 @@ export default function WalletScreen() {
     <SafeAreaView style={styles.safe}>
       <StatusBar barStyle="dark-content" />
 
-      {/* header */}
+      
       <View style={styles.header}>
         <Pressable onPress={() => router.back()} style={styles.backBtn} hitSlop={8}>
           <Ionicons name="chevron-back" size={24} color="#111" />
@@ -188,11 +188,11 @@ export default function WalletScreen() {
 
       <Animated.ScrollView style={{ opacity: 1 }} contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
 
-        {/* reminder cards */}
+        
         <Text style={styles.sectionLabel}>Reminders</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 12, paddingBottom: 4, paddingRight: 4 }}>
 
-          {/* daily budget card */}
+          
           <View style={styles.card}>
             <Text style={styles.cardTitle}>Daily Budget</Text>
             <Text style={styles.cardBig}>
@@ -208,7 +208,7 @@ export default function WalletScreen() {
             </>}
           </View>
 
-          {/* exchange rate card */}
+          
           <View style={styles.card}>
             <Text style={styles.cardTitle}>Exchange Rate</Text>
             <Text style={styles.cardBig} numberOfLines={1}>

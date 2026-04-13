@@ -18,7 +18,7 @@ export default function InvitesScreen() {
   const [loading, setLoading] = useState(true);
   const [processingId, setProcessingId] = useState(null);
 
-  // listen for invites and fetch trip details for each one
+  
   useEffect(() => {
     const invitesRef = collection(db, "users", currentUser.uid, "invites");
     return onSnapshot(invitesRef, async (snapshot) => {
@@ -41,16 +41,16 @@ export default function InvitesScreen() {
   async function acceptInvite(invite) {
     setProcessingId(invite.id);
     try {
-      // copy the trip to the current user's trips collection
+      
       if (invite.tripData) {
         await addDoc(collection(db, "users", currentUser.uid, "trips"), {
           ...invite.tripData,
           createdAt: serverTimestamp(),
         });
       }
-      // add user to the group chat members list
+      
       await updateDoc(doc(db, "groupchats", invite.chatId), { members: arrayUnion(currentUser.uid) });
-      // delete the invite now that it's been handled
+      
       await deleteDoc(doc(db, "users", currentUser.uid, "invites", invite.id));
       router.push({ pathname: "/chat", params: { chatId: invite.chatId } });
     } catch (err) {
@@ -81,7 +81,7 @@ export default function InvitesScreen() {
     <SafeAreaView style={s.safe}>
       <StatusBar barStyle="dark-content" />
 
-      {/* header */}
+      
       <View style={s.header}>
         <Pressable onPress={() => router.back()} style={s.iconButton} hitSlop={8}>
           <Ionicons name="chevron-back" size={24} color="#1F1F1F" />
@@ -104,7 +104,7 @@ export default function InvitesScreen() {
             return (
               <View key={invite.id} style={s.card}>
 
-                {/* who sent the invite */}
+                
                 <View style={s.senderRow}>
                   <View style={s.avatar}>
                     <Text style={s.avatarLetter}>{invite.fromUsername?.charAt(0).toUpperCase() || "?"}</Text>
@@ -117,7 +117,7 @@ export default function InvitesScreen() {
                   </View>
                 </View>
 
-                {/* trip details */}
+                
                 {invite.tripData ? (
                   <View style={s.tripCard}>
                     <Text style={s.tripLocation}>{invite.tripData.location}</Text>
@@ -137,7 +137,7 @@ export default function InvitesScreen() {
                   <Text style={s.noTripText}>Trip details unavailable</Text>
                 )}
 
-                {/* accept / decline buttons */}
+                
                 <View style={s.buttonRow}>
                   <TouchableOpacity style={s.declineButton} onPress={() => declineInvite(invite)} disabled={isProcessing}>
                     {isProcessing ? <ActivityIndicator size="small" color="#888" /> : <Text style={s.declineText}>Decline</Text>}
