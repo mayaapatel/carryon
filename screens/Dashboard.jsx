@@ -21,12 +21,9 @@ const user = getAuth().currentUser;
 
 const BLUE = "#3F63F3";
 const BG = "#F5F7FF";
-const CARD = "#FFFFFF";
-const BORDER = "#E0E7FF";
 const TEXT = "#1F2937";
 const MUTED = "#6B7280";
 const ICON = "#94A3B8";
-const OVERLAY = "rgba(255,255,255,0.85)";
 
 function getTimestampMillis(value) {
   if (!value) return 0;
@@ -51,6 +48,43 @@ function startOfTodayMillis() {
 function isPastTrip(trip) {
   const endMillis = getTimestampMillis(trip.endDate);
   return endMillis > 0 && endMillis < startOfTodayMillis();
+}
+
+function isCurrentTrip(trip) {
+  const today = startOfTodayMillis();
+  const startMillis = getTimestampMillis(trip.startDate);
+  const endMillis = getTimestampMillis(trip.endDate);
+
+  if (!startMillis || !endMillis) return false;
+  return startMillis <= today && endMillis >= today;
+}
+
+function isUpcomingTrip(trip) {
+  const today = startOfTodayMillis();
+  const startMillis = getTimestampMillis(trip.startDate);
+  return startMillis > today;
+}
+
+function formatTripDate(value) {
+  const millis = getTimestampMillis(value);
+  if (!millis) return "";
+
+  const date = new Date(millis);
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  const year = date.getFullYear();
+
+  return `${month}/${day}/${year}`;
+}
+
+function getTripDateRange(trip) {
+  const start = formatTripDate(trip.startDate);
+  const end = formatTripDate(trip.endDate);
+
+  if (start && end) return `${start} - ${end}`;
+  if (start) return start;
+  if (end) return end;
+  return "";
 }
 
 function getPlaceholderPhotoUri(trip) {
@@ -101,12 +135,6 @@ export default function Dashboard() {
         ...doc.data(),
       }));
 
-      loadedTrips.sort((a, b) => {
-        const aCreated = getTimestampMillis(a.createdAt);
-        const bCreated = getTimestampMillis(b.createdAt);
-        return bCreated - aCreated;
-      });
-
       setTrips(loadedTrips);
     } catch (error) {
       console.log("Error loading trips:", error);
@@ -123,7 +151,26 @@ export default function Dashboard() {
   );
 
   const activeTrips = useMemo(() => {
-    return trips.filter((trip) => !isPastTrip(trip));
+    return trips
+      .filter((trip) => !isPastTrip(trip))
+      .sort((a, b) => {
+        const aIsCurrent = isCurrentTrip(a);
+        const bIsCurrent = isCurrentTrip(b);
+
+        if (aIsCurrent && !bIsCurrent) return -1;
+        if (!aIsCurrent && bIsCurrent) return 1;
+
+        const aStart = getTimestampMillis(a.startDate);
+        const bStart = getTimestampMillis(b.startDate);
+
+        if (aStart !== bStart) {
+          return aStart - bStart;
+        }
+
+        const aEnd = getTimestampMillis(a.endDate);
+        const bEnd = getTimestampMillis(b.endDate);
+        return aEnd - bEnd;
+      });
   }, [trips]);
 
   const pastTrips = useMemo(() => {
@@ -138,8 +185,32 @@ export default function Dashboard() {
 
   const mainTrip = useMemo(() => {
     if (activeTrips.length === 0) return null;
+
+    const currentTrips = activeTrips.filter((trip) => isCurrentTrip(trip));
+    if (currentTrips.length > 0) {
+      return currentTrips.sort((a, b) => {
+        const aStart = getTimestampMillis(a.startDate);
+        const bStart = getTimestampMillis(b.startDate);
+        return aStart - bStart;
+      })[0];
+    }
+
+    const upcomingTrips = activeTrips.filter((trip) => isUpcomingTrip(trip));
+    if (upcomingTrips.length > 0) {
+      return upcomingTrips.sort((a, b) => {
+        const aStart = getTimestampMillis(a.startDate);
+        const bStart = getTimestampMillis(b.startDate);
+        return aStart - bStart;
+      })[0];
+    }
+
     return activeTrips[0];
   }, [activeTrips]);
+
+  const listTrips = useMemo(() => {
+    if (!mainTrip) return activeTrips;
+    return activeTrips.filter((trip) => trip.id !== mainTrip.id);
+  }, [activeTrips, mainTrip]);
 
   const onOpenTrip = (trip) => {
     router.push({
@@ -210,6 +281,11 @@ export default function Dashboard() {
                   <Text style={styles.heroLabelText}>
                     {mainTrip.title || mainTrip.location || "Trip"}
                   </Text>
+                  {!!getTripDateRange(mainTrip) && (
+                    <Text style={styles.heroDateText}>
+                      {getTripDateRange(mainTrip)}
+                    </Text>
+                  )}
                 </View>
               </ImageBackground>
             ) : (
@@ -222,6 +298,11 @@ export default function Dashboard() {
                   <Text style={styles.heroLabelText}>
                     {mainTrip.title || mainTrip.location || "Trip"}
                   </Text>
+                  {!!getTripDateRange(mainTrip) && (
+                    <Text style={styles.heroDateText}>
+                      {getTripDateRange(mainTrip)}
+                    </Text>
+                  )}
                 </View>
               </ImageBackground>
             )}
@@ -243,13 +324,13 @@ export default function Dashboard() {
           <View style={styles.tripsState}>
             <ActivityIndicator size="small" color={BLUE} />
           </View>
-        ) : activeTrips.length === 0 ? (
+        ) : listTrips.length === 0 ? (
           <View style={styles.tripsState}>
-            <Text style={styles.emptyTripsText}>No current trips yet</Text>
+            <Text style={styles.emptyTripsText}>No other current trips yet</Text>
           </View>
         ) : (
           <View style={styles.tripList}>
-            {activeTrips.map((trip) => {
+            {listTrips.map((trip) => {
               const tripPhotoUri = getTripDisplayPhotoUri(trip);
 
               return (
@@ -281,6 +362,12 @@ export default function Dashboard() {
                     <Text style={styles.tripCardTitle} numberOfLines={1}>
                       {trip.title || trip.location || "Trip"}
                     </Text>
+
+                    {!!getTripDateRange(trip) && (
+                      <Text style={styles.tripCardDate} numberOfLines={1}>
+                        {getTripDateRange(trip)}
+                      </Text>
+                    )}
 
                     {!!trip.description && (
                       <Text style={styles.tripCardSubtext} numberOfLines={2}>
@@ -489,6 +576,12 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: "#3F63F3",
   },
+  heroDateText: {
+    marginTop: 3,
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#4B5563",
+  },
 
   heroLoadingWrap: {
     height: 185,
@@ -549,7 +642,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   tripCard: {
-    backgroundColor: "#D4DEFF", // darker than background → visible layer
+    backgroundColor: "#D4DEFF",
     borderRadius: 14,
     borderWidth: 1,
     borderColor: "#B4C6FF",
@@ -582,6 +675,12 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: "600",
     color: "#111827",
+  },
+  tripCardDate: {
+    marginTop: 4,
+    fontSize: 12,
+    color: "#3F63F3",
+    fontWeight: "600",
   },
   tripCardSubtext: {
     marginTop: 4,

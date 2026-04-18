@@ -17,17 +17,18 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { doc, getDoc } from "firebase/firestore";
 import {
   formatTime,
   getTripItemById,
   upsertTripItem,
 } from "../utils/tripStorage";
-import { auth } from "../firebaseConfig";
+import { auth, db } from "../firebaseConfig";
 
-const BLUE = "#4967E8";
-const BG = "#F7F7F7";
-const BORDER = "#DADADA";
-const TEXT = "#1F1F1F";
+const BLUE = "#3F63F3";
+const BG = "#DCE6FF";
+const BORDER = "#B4C6FF";
+const TEXT = "#1F2937";
 
 const MONTHS = [
   "Jan", "Feb", "Mar", "Apr", "May", "Jun",
@@ -57,6 +58,53 @@ function createEmptyForm() {
   };
 }
 
+function stripTime(date) {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+}
+
+function datesEqual(a, b) {
+  return (
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate()
+  );
+}
+
+function buildDateFromParts(year, monthIndex, day, baseTime = null) {
+  const hours = baseTime ? baseTime.getHours() : 12;
+  const minutes = baseTime ? baseTime.getMinutes() : 0;
+  return new Date(year, monthIndex, day, hours, minutes, 0);
+}
+
+function toMonthKey(year, monthIndex) {
+  return year * 100 + monthIndex;
+}
+
+function getValidDayRangeForMonth(year, monthIndex, tripStartDate, tripEndDate) {
+  const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
+
+  let minDay = 1;
+  let maxDay = daysInMonth;
+
+  if (
+    tripStartDate &&
+    tripStartDate.getFullYear() === year &&
+    tripStartDate.getMonth() === monthIndex
+  ) {
+    minDay = tripStartDate.getDate();
+  }
+
+  if (
+    tripEndDate &&
+    tripEndDate.getFullYear() === year &&
+    tripEndDate.getMonth() === monthIndex
+  ) {
+    maxDay = tripEndDate.getDate();
+  }
+
+  return { minDay, maxDay };
+}
+
 export default function AddActivity() {
   const router = useRouter();
   const params = useLocalSearchParams();
@@ -74,6 +122,8 @@ export default function AddActivity() {
   const [category, setCategory] = useState("activity");
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [loadingEditData, setLoadingEditData] = useState(false);
+  const [tripStartDate, setTripStartDate] = useState(null);
+  const [tripEndDate, setTripEndDate] = useState(null);
 
   const [tabForms, setTabForms] = useState({
     activity: createEmptyForm(),
@@ -87,6 +137,45 @@ export default function AddActivity() {
       setCategory(presetCategory);
     }
   }, [presetCategory, editingId]);
+
+  useEffect(() => {
+    async function loadTripRange() {
+      if (!sourceTripId || !sourceTripOwnerId) return;
+
+      try {
+        const tripRef = doc(db, "users", sourceTripOwnerId, "trips", sourceTripId);
+        const tripSnap = await getDoc(tripRef);
+
+        if (!tripSnap.exists()) return;
+
+        const tripData = tripSnap.data() || {};
+
+        const rawStart = tripData.startDate?.toDate
+          ? tripData.startDate.toDate()
+          : tripData.startDate
+          ? new Date(tripData.startDate)
+          : null;
+
+        const rawEnd = tripData.endDate?.toDate
+          ? tripData.endDate.toDate()
+          : tripData.endDate
+          ? new Date(tripData.endDate)
+          : null;
+
+        if (rawStart && !Number.isNaN(rawStart.getTime())) {
+          setTripStartDate(stripTime(rawStart));
+        }
+
+        if (rawEnd && !Number.isNaN(rawEnd.getTime())) {
+          setTripEndDate(stripTime(rawEnd));
+        }
+      } catch (error) {
+        console.log("Load trip range error:", error);
+      }
+    }
+
+    loadTripRange();
+  }, [sourceTripId, sourceTripOwnerId]);
 
   useEffect(() => {
     async function loadEditItem() {
@@ -146,6 +235,29 @@ export default function AddActivity() {
   const currentMonth = MONTHS[currentForm.monthIndex];
   const currentYear = YEARS[currentForm.yearIndex];
 
+  const allowedMonthKeys = useMemo(() => {
+    if (!tripStartDate || !tripEndDate) return null;
+
+    const keys = [];
+    let year = tripStartDate.getFullYear();
+    let month = tripStartDate.getMonth();
+
+    while (
+      year < tripEndDate.getFullYear() ||
+      (year === tripEndDate.getFullYear() && month <= tripEndDate.getMonth())
+    ) {
+      keys.push(toMonthKey(year, month));
+
+      month += 1;
+      if (month > 11) {
+        month = 0;
+        year += 1;
+      }
+    }
+
+    return keys;
+  }, [tripStartDate, tripEndDate]);
+
   const daysInMonth = useMemo(() => {
     return new Date(currentYear, currentForm.monthIndex + 1, 0).getDate();
   }, [currentYear, currentForm.monthIndex]);
@@ -153,6 +265,15 @@ export default function AddActivity() {
   const firstDayOfMonth = useMemo(() => {
     return new Date(currentYear, currentForm.monthIndex, 1).getDay();
   }, [currentYear, currentForm.monthIndex]);
+
+  const validDayRange = useMemo(() => {
+    return getValidDayRangeForMonth(
+      currentYear,
+      currentForm.monthIndex,
+      tripStartDate,
+      tripEndDate
+    );
+  }, [currentYear, currentForm.monthIndex, tripStartDate, tripEndDate]);
 
   const calendarCells = useMemo(() => {
     const cells = [];
@@ -162,7 +283,17 @@ export default function AddActivity() {
     }
 
     for (let day = 1; day <= daysInMonth; day++) {
-      cells.push({ type: "day", key: `day-${day}`, value: day });
+      const cellDate = stripTime(new Date(currentYear, currentForm.monthIndex, day));
+      const isInTripRange =
+        (!tripStartDate || cellDate >= tripStartDate) &&
+        (!tripEndDate || cellDate <= tripEndDate);
+
+      cells.push({
+        type: "day",
+        key: `day-${day}`,
+        value: day,
+        disabled: !isInTripRange,
+      });
     }
 
     while (cells.length % 7 !== 0) {
@@ -170,7 +301,114 @@ export default function AddActivity() {
     }
 
     return cells;
-  }, [firstDayOfMonth, daysInMonth]);
+  }, [
+    firstDayOfMonth,
+    daysInMonth,
+    currentYear,
+    currentForm.monthIndex,
+    tripStartDate,
+    tripEndDate,
+  ]);
+
+  const canGoPrevMonth = useMemo(() => {
+    if (!allowedMonthKeys) {
+      if (currentForm.monthIndex === 0) {
+        return currentForm.yearIndex > 0;
+      }
+      return true;
+    }
+
+    const prevMonthIndex = currentForm.monthIndex === 0 ? 11 : currentForm.monthIndex - 1;
+    const prevYearIndex = currentForm.monthIndex === 0
+      ? currentForm.yearIndex - 1
+      : currentForm.yearIndex;
+
+    if (prevYearIndex < 0) return false;
+
+    const prevYear = YEARS[prevYearIndex];
+    return allowedMonthKeys.includes(toMonthKey(prevYear, prevMonthIndex));
+  }, [allowedMonthKeys, currentForm.monthIndex, currentForm.yearIndex]);
+
+  const canGoNextMonth = useMemo(() => {
+    if (!allowedMonthKeys) {
+      if (currentForm.monthIndex === 11) {
+        return currentForm.yearIndex < YEARS.length - 1;
+      }
+      return true;
+    }
+
+    const nextMonthIndex = currentForm.monthIndex === 11 ? 0 : currentForm.monthIndex + 1;
+    const nextYearIndex = currentForm.monthIndex === 11
+      ? currentForm.yearIndex + 1
+      : currentForm.yearIndex;
+
+    if (nextYearIndex > YEARS.length - 1) return false;
+
+    const nextYear = YEARS[nextYearIndex];
+    return allowedMonthKeys.includes(toMonthKey(nextYear, nextMonthIndex));
+  }, [allowedMonthKeys, currentForm.monthIndex, currentForm.yearIndex]);
+
+  useEffect(() => {
+    if (!tripStartDate || !tripEndDate) return;
+    if (!YEARS.includes(tripStartDate.getFullYear()) || !YEARS.includes(tripEndDate.getFullYear())) return;
+
+    setTabForms((prev) => {
+      const next = { ...prev };
+
+      for (const key of Object.keys(next)) {
+        const form = next[key];
+        const formDate = stripTime(
+          buildDateFromParts(
+            YEARS[form.yearIndex],
+            form.monthIndex,
+            form.selectedDay,
+            form.timeValue
+          )
+        );
+
+        if (formDate < tripStartDate || formDate > tripEndDate) {
+          const replacementDate = tripStartDate;
+
+          const newTime = new Date(form.timeValue);
+          newTime.setFullYear(replacementDate.getFullYear());
+          newTime.setMonth(replacementDate.getMonth());
+          newTime.setDate(replacementDate.getDate());
+
+          next[key] = {
+            ...form,
+            yearIndex: YEARS.indexOf(replacementDate.getFullYear()),
+            monthIndex: replacementDate.getMonth(),
+            selectedDay: replacementDate.getDate(),
+            timeValue: newTime,
+          };
+        } else {
+          const { minDay, maxDay } = getValidDayRangeForMonth(
+            YEARS[form.yearIndex],
+            form.monthIndex,
+            tripStartDate,
+            tripEndDate
+          );
+
+          let adjustedDay = form.selectedDay;
+          if (adjustedDay < minDay) adjustedDay = minDay;
+          if (adjustedDay > maxDay) adjustedDay = maxDay;
+
+          if (adjustedDay !== form.selectedDay) {
+            const newTime = new Date(form.timeValue);
+            newTime.setDate(adjustedDay);
+
+            next[key] = {
+              ...form,
+              selectedDay: adjustedDay,
+              timeValue: newTime,
+            };
+          }
+        }
+      }
+
+      return next;
+    });
+  }, [tripStartDate, tripEndDate]);
 
   function updateCurrentForm(updates) {
     setTabForms((prev) => ({
@@ -183,38 +421,128 @@ export default function AddActivity() {
   }
 
   function resetAllForms() {
+    const base = createEmptyForm();
+
+    if (tripStartDate && YEARS.includes(tripStartDate.getFullYear())) {
+      base.yearIndex = YEARS.indexOf(tripStartDate.getFullYear());
+      base.monthIndex = tripStartDate.getMonth();
+      base.selectedDay = tripStartDate.getDate();
+      base.timeValue = new Date(
+        tripStartDate.getFullYear(),
+        tripStartDate.getMonth(),
+        tripStartDate.getDate(),
+        12,
+        0,
+        0
+      );
+    }
+
     setTabForms({
-      activity: createEmptyForm(),
-      transportation: createEmptyForm(),
-      food: createEmptyForm(),
-      hotel: createEmptyForm(),
+      activity: { ...base },
+      transportation: { ...base },
+      food: { ...base },
+      hotel: { ...base },
     });
     setCategory("activity");
   }
 
   function goPrevMonth() {
+    if (!canGoPrevMonth) return;
+
     if (currentForm.monthIndex === 0) {
       if (currentForm.yearIndex > 0) {
+        const newYearIndex = currentForm.yearIndex - 1;
+        const newMonthIndex = 11;
+        const newYear = YEARS[newYearIndex];
+        const { minDay, maxDay } = getValidDayRangeForMonth(
+          newYear,
+          newMonthIndex,
+          tripStartDate,
+          tripEndDate
+        );
+
+        const nextSelectedDay = Math.min(Math.max(currentForm.selectedDay, minDay), maxDay);
+        const nextTime = new Date(currentForm.timeValue);
+        nextTime.setFullYear(newYear);
+        nextTime.setMonth(newMonthIndex);
+        nextTime.setDate(nextSelectedDay);
+
         updateCurrentForm({
-          monthIndex: 11,
-          yearIndex: currentForm.yearIndex - 1,
+          monthIndex: newMonthIndex,
+          yearIndex: newYearIndex,
+          selectedDay: nextSelectedDay,
+          timeValue: nextTime,
         });
       }
     } else {
-      updateCurrentForm({ monthIndex: currentForm.monthIndex - 1 });
+      const newMonthIndex = currentForm.monthIndex - 1;
+      const { minDay, maxDay } = getValidDayRangeForMonth(
+        currentYear,
+        newMonthIndex,
+        tripStartDate,
+        tripEndDate
+      );
+
+      const nextSelectedDay = Math.min(Math.max(currentForm.selectedDay, minDay), maxDay);
+      const nextTime = new Date(currentForm.timeValue);
+      nextTime.setMonth(newMonthIndex);
+      nextTime.setDate(nextSelectedDay);
+
+      updateCurrentForm({
+        monthIndex: newMonthIndex,
+        selectedDay: nextSelectedDay,
+        timeValue: nextTime,
+      });
     }
   }
 
   function goNextMonth() {
+    if (!canGoNextMonth) return;
+
     if (currentForm.monthIndex === 11) {
       if (currentForm.yearIndex < YEARS.length - 1) {
+        const newYearIndex = currentForm.yearIndex + 1;
+        const newMonthIndex = 0;
+        const newYear = YEARS[newYearIndex];
+        const { minDay, maxDay } = getValidDayRangeForMonth(
+          newYear,
+          newMonthIndex,
+          tripStartDate,
+          tripEndDate
+        );
+
+        const nextSelectedDay = Math.min(Math.max(currentForm.selectedDay, minDay), maxDay);
+        const nextTime = new Date(currentForm.timeValue);
+        nextTime.setFullYear(newYear);
+        nextTime.setMonth(newMonthIndex);
+        nextTime.setDate(nextSelectedDay);
+
         updateCurrentForm({
-          monthIndex: 0,
-          yearIndex: currentForm.yearIndex + 1,
+          monthIndex: newMonthIndex,
+          yearIndex: newYearIndex,
+          selectedDay: nextSelectedDay,
+          timeValue: nextTime,
         });
       }
     } else {
-      updateCurrentForm({ monthIndex: currentForm.monthIndex + 1 });
+      const newMonthIndex = currentForm.monthIndex + 1;
+      const { minDay, maxDay } = getValidDayRangeForMonth(
+        currentYear,
+        newMonthIndex,
+        tripStartDate,
+        tripEndDate
+      );
+
+      const nextSelectedDay = Math.min(Math.max(currentForm.selectedDay, minDay), maxDay);
+      const nextTime = new Date(currentForm.timeValue);
+      nextTime.setMonth(newMonthIndex);
+      nextTime.setDate(nextSelectedDay);
+
+      updateCurrentForm({
+        monthIndex: newMonthIndex,
+        selectedDay: nextSelectedDay,
+        timeValue: nextTime,
+      });
     }
   }
 
@@ -552,7 +880,10 @@ export default function AddActivity() {
             onChange={(event, selectedDate) => {
               setShowTimePicker(false);
               if (selectedDate) {
-                updateCurrentForm({ timeValue: selectedDate });
+                const next = new Date(currentForm.timeValue);
+                next.setHours(selectedDate.getHours());
+                next.setMinutes(selectedDate.getMinutes());
+                updateCurrentForm({ timeValue: next });
               }
             }}
           />
@@ -612,8 +943,16 @@ export default function AddActivity() {
 
         <View style={styles.calendarCard}>
           <View style={styles.calendarTopRow}>
-            <Pressable onPress={goPrevMonth} style={styles.arrowButton}>
-              <Ionicons name="chevron-back" size={18} color={TEXT} />
+            <Pressable
+              onPress={goPrevMonth}
+              style={[styles.arrowButton, !canGoPrevMonth && styles.arrowButtonDisabled]}
+              disabled={!canGoPrevMonth}
+            >
+              <Ionicons
+                name="chevron-back"
+                size={18}
+                color={canGoPrevMonth ? TEXT : "#9CA3AF"}
+              />
             </Pressable>
 
             <View style={styles.dropdownRow}>
@@ -626,8 +965,16 @@ export default function AddActivity() {
               </View>
             </View>
 
-            <Pressable onPress={goNextMonth} style={styles.arrowButton}>
-              <Ionicons name="chevron-forward" size={18} color={TEXT} />
+            <Pressable
+              onPress={goNextMonth}
+              style={[styles.arrowButton, !canGoNextMonth && styles.arrowButtonDisabled]}
+              disabled={!canGoNextMonth}
+            >
+              <Ionicons
+                name="chevron-forward"
+                size={18}
+                color={canGoNextMonth ? TEXT : "#9CA3AF"}
+              />
             </Pressable>
           </View>
 
@@ -646,20 +993,50 @@ export default function AddActivity() {
               }
 
               const selected = cell.value === currentForm.selectedDay;
+              const disabled = cell.disabled;
 
               return (
                 <Pressable
                   key={cell.key}
-                  style={[styles.dayCell, selected && styles.selectedDayCell]}
-                  onPress={() => updateCurrentForm({ selectedDay: cell.value })}
+                  style={[
+                    styles.dayCell,
+                    selected && styles.selectedDayCell,
+                    disabled && styles.disabledDayCell,
+                  ]}
+                  disabled={disabled}
+                  onPress={() => {
+                    const nextTime = new Date(currentForm.timeValue);
+                    nextTime.setFullYear(currentYear);
+                    nextTime.setMonth(currentForm.monthIndex);
+                    nextTime.setDate(cell.value);
+
+                    updateCurrentForm({
+                      selectedDay: cell.value,
+                      timeValue: nextTime,
+                    });
+                  }}
                 >
-                  <Text style={[styles.dayText, selected && styles.selectedDayText]}>
+                  <Text
+                    style={[
+                      styles.dayText,
+                      selected && styles.selectedDayText,
+                      disabled && styles.disabledDayText,
+                    ]}
+                  >
                     {cell.value}
                   </Text>
                 </Pressable>
               );
             })}
           </View>
+
+          {tripStartDate && tripEndDate ? (
+            <Text style={styles.tripRangeText}>
+              Select a date between{" "}
+              {MONTHS[tripStartDate.getMonth()]} {tripStartDate.getDate()} and{" "}
+              {MONTHS[tripEndDate.getMonth()]} {tripEndDate.getDate()}, {tripEndDate.getFullYear()}
+            </Text>
+          ) : null}
         </View>
 
         <Pressable style={styles.createButton} onPress={onAddAllItems}>
@@ -939,6 +1316,10 @@ const styles = StyleSheet.create({
     backgroundColor: "#C9D7FF",
   },
 
+  arrowButtonDisabled: {
+    backgroundColor: "#E5E7EB",
+  },
+
   dropdownRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -1008,6 +1389,11 @@ const styles = StyleSheet.create({
     backgroundColor: "#5A75F5"
   },
 
+  disabledDayCell: {
+    backgroundColor: "#E5E7EB",
+    opacity: 0.65,
+  },
+
   dayText: {
     fontSize: 16,
     color: "#2B2B2B"
@@ -1016,6 +1402,18 @@ const styles = StyleSheet.create({
   selectedDayText: {
     color: "#fff",
     fontWeight: "600"
+  },
+
+  disabledDayText: {
+    color: "#9CA3AF",
+  },
+
+  tripRangeText: {
+    marginTop: 10,
+    textAlign: "center",
+    color: "#4B5563",
+    fontSize: 12,
+    lineHeight: 18,
   },
 
   createButton: {

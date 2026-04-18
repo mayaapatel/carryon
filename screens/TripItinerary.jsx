@@ -276,10 +276,22 @@ export default function TripItinerary() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.header}>
-          <Pressable onPress={() => router.back()} style={styles.headerIcon}>
-            <Ionicons name="chevron-back" size={24} color={TEXT} />
-          </Pressable>
+      <View style={styles.header}>
+        <Pressable
+          onPress={() =>
+            router.push({
+              pathname: "/maintrip",
+              params: {
+                tripId: String(tripId),
+                sourceTripId: String(sourceTripId || tripId),
+                sourceTripOwnerId: String(sourceTripOwnerId || ""),
+              },
+            })
+          }
+          style={styles.headerIcon}
+        >
+          <Ionicons name="chevron-back" size={24} color={TEXT} />
+        </Pressable>
 
           <Text style={styles.headerTitle}>Trip Itinerary</Text>
 
