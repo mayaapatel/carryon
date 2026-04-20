@@ -86,7 +86,7 @@ export default function BeforeYouTravel() {
   const [openKey, setOpenKey] = useState("documents");
   const [preparationLoaded, setPreparationLoaded] = useState(false);
 
-  // Load trip data + saved checklist in one effect to avoid race condition
+
   useEffect(() => {
     const user = auth.currentUser;
     if (!user || !tripId) return;
@@ -103,7 +103,7 @@ export default function BeforeYouTravel() {
       const city    = typeof d.location?.city    === "string" ? d.location.city.trim()    : "";
       const country = typeof d.location?.country === "string" ? d.location.country.trim() : "";
 
-      // Geocode
+      
       let lat, lon, countryCode, cData = null;
       if (city && country) {
         const geoData = await fetch(
@@ -116,7 +116,7 @@ export default function BeforeYouTravel() {
           lon = parseFloat(geoData[0].lon);
           countryCode = geoData[0].address?.country_code?.toUpperCase() || "";
 
-          // Country info
+          
           try {
             const c = await fetch(`https://restcountries.com/v3.1/alpha/${countryCode}`).then(r => r.json()).then(j => j[0]);
             cData = {
@@ -171,8 +171,8 @@ export default function BeforeYouTravel() {
         }
       }
 
-      // Build the final document items with the resolved country name,
-      // then apply saved checklist state on top — all in one setLists call
+      // final document items,
+      // saved checklist state on top
       const finalDocItems = makeDocItems(cData?.name || country || "");
       const checkSnap = await getDoc(doc(db, "users", user.uid, "trips", String(tripId), "preparation", "checklist")).catch(() => null);
       const saved = checkSnap?.exists() ? checkSnap.data() : {};
@@ -190,7 +190,7 @@ export default function BeforeYouTravel() {
     })();
   }, [tripId]);
 
-  // Save checklist to Firebase on every change
+  // Save checklist to Firebase every change
   useEffect(() => {
     if (!preparationLoaded) return;
     const user = auth.currentUser;

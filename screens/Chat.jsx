@@ -84,7 +84,6 @@ export default function GroupChatScreen() {
         let sourceTripOwnerId = null;
         let sourceTripId = fetchedTripId;
 
-        // 1) First try current user's trip copy
         if (currentUser?.uid && fetchedTripId) {
           try {
             const myTripSnap = await getDoc(
@@ -118,7 +117,6 @@ export default function GroupChatScreen() {
           }
         }
 
-        // 2) Fallback: search chat members' trip docs
         if (!sourceTripData) {
           for (const uid of chatMemberUids) {
             try {
@@ -170,7 +168,6 @@ export default function GroupChatScreen() {
 
         setMembers(memberData);
 
-        // Optional sync so chat doc also keeps all trip participants
         const missingFromChat = participantUids.filter((uid) => !chatMemberUids.includes(uid));
         if (missingFromChat.length > 0) {
           try {

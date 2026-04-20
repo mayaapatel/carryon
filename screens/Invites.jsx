@@ -164,7 +164,6 @@ export default function InvitesScreen() {
         ])
       );
 
-      // 1) Update the OWNER'S real trip so this user is a member of the shared source trip
       await updateDoc(ownerTripRef, {
         allowedUsers: arrayUnion(currentUser.uid),
         memberIds: arrayUnion(currentUser.uid),
@@ -173,8 +172,6 @@ export default function InvitesScreen() {
         updatedAt: serverTimestamp(),
       });
 
-      // 2) Create a POINTER trip doc in the invited user's account
-      //    IMPORTANT: use the SAME tripId so navigation stays consistent
       const invitedUserTripRef = doc(db, "users", currentUser.uid, "trips", tripId);
 
       await setDoc(
@@ -188,7 +185,6 @@ export default function InvitesScreen() {
           acceptedFromInvite: true,
           withGroup: true,
 
-          // source of truth
           tripOwnerId,
           ownerId: tripOwnerId,
           originalTripId: tripId,
@@ -197,12 +193,10 @@ export default function InvitesScreen() {
           sourceTripId: tripId,
           sourceTripOwnerId: tripOwnerId,
 
-          // keep member lists in sync locally too
           allowedUsers: mergedAllowedUsers,
           memberIds: mergedMemberIds,
           sharedWith: mergedSharedWith,
 
-          // timestamps
           updatedAt: serverTimestamp(),
           acceptedAt: serverTimestamp(),
           createdAt: ownerTripData.createdAt || serverTimestamp(),

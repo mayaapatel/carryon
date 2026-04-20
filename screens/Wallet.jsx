@@ -3,9 +3,9 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { addDoc, collection, doc, getDoc, onSnapshot, orderBy, query, serverTimestamp } from "firebase/firestore";
 import { useEffect, useRef, useState } from "react";
 import {
-    Animated, Dimensions, KeyboardAvoidingView, Modal,
-    Platform, Pressable, SafeAreaView, ScrollView, StatusBar,
-    StyleSheet, Text, TextInput, TouchableOpacity, View
+  Animated, Dimensions, KeyboardAvoidingView, Modal,
+  Platform, Pressable, SafeAreaView, ScrollView, StatusBar,
+  StyleSheet, Text, TextInput, TouchableOpacity, View
 } from "react-native";
 import { Line, Svg } from "react-native-svg";
 import { auth, db } from "../firebaseConfig";
@@ -50,8 +50,6 @@ export default function WalletScreen() {
         setTripDays(days);
       }
 
-      // Use the same currencies API that was already in the original code,
-      // just match against the country string from Firebase instead of user input
       if (d.location?.country) {
         const country = d.location.country.toLowerCase() || "";
         const data = await fetch("https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies.json").then(r => r.json());
@@ -68,14 +66,12 @@ export default function WalletScreen() {
     });
   }, [tripId]);
 
-  // Load expenses
   useEffect(() => {
     const user = auth.currentUser;
     const q = query(collection(db, "users", user.uid, "trips", String(tripId), "majorExpenses"), orderBy("createdAt", "desc"));
     return onSnapshot(q, snap => setExpenses(snap.docs.map(d => ({ id: d.id, ...d.data() }))));
   }, [tripId]);
 
-  // Fetch exchange rate — same as original, just driven by the auto-resolved currency
   useEffect(() => {
     if (!selectedCurrency) return;
     const url = "https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/usd.json";
