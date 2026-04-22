@@ -254,18 +254,26 @@ export default function Dashboard() {
 
       <ScrollView
         contentContainerStyle={styles.scroll}
-        showsVerticalScrollIndicator={false}
-      >
-        <View style={styles.topRow}>
-          <TouchableOpacity
-            onPress={onBackPress}
-            style={styles.iconButton}
-            activeOpacity={0.7}
-          >
-            <Ionicons name="chevron-back" size={24} color={TEXT} />
-          </TouchableOpacity>
-        </View>
+        showsVerticalScrollIndicator={true}
 
+      >
+<View style={styles.topRow}>
+  <TouchableOpacity
+    onPress={onBackPress}
+    style={styles.iconButton}
+    activeOpacity={0.7}
+  >
+    <Ionicons name="chevron-back" size={24} color={TEXT} />
+  </TouchableOpacity>
+
+  <TouchableOpacity
+    onPress={onSettingsPress}
+    style={styles.iconButton}
+    activeOpacity={0.7}
+  >
+    <Ionicons name="settings-outline" size={22} color={TEXT} />
+  </TouchableOpacity>
+</View>
         <View style={styles.titleWrap}>
           <Text style={styles.title}>CarryOn</Text>
           <Text style={styles.subtitle}>PLAN. PACK. GO.</Text>
@@ -495,14 +503,6 @@ export default function Dashboard() {
           <Text style={styles.createBtnText}>Invites</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity
-          onPress={onSettingsPress}
-          style={styles.createBtn}
-          activeOpacity={0.9}
-        >
-          <Text style={styles.createBtnText}>Settings</Text>
-        </TouchableOpacity>
-
         <View style={{ height: 24 }} />
       </ScrollView>
     </SafeAreaView>
@@ -519,12 +519,13 @@ const styles = StyleSheet.create({
     paddingBottom: 10,
   },
 
-  topRow: {
-    paddingTop: 0,
-    paddingBottom: 6,
-    flexDirection: "row",
-    alignItems: "center",
-  },
+topRow: {
+  paddingTop: 0,
+  paddingBottom: 6,
+  flexDirection: "row",
+  alignItems: "center",
+  justifyContent: "space-between",
+},
   iconButton: {
     width: 36,
     height: 36,

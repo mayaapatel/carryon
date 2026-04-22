@@ -18,6 +18,8 @@ import {
   Text,
   TextInput,
   View,
+  KeyboardAvoidingView,
+  Platform,
 } from "react-native";
 import {
   deleteTripItem,
@@ -75,6 +77,8 @@ export default function TripItemDetails() {
     : null;
 
   const fullScreenScrollRef = useRef(null);
+  const formScrollRef = useRef(null);
+  const fieldPositionsRef = useRef({});
 
   const [item, setItem] = useState(null);
   const [draft, setDraft] = useState(null);
@@ -141,6 +145,23 @@ export default function TripItemDetails() {
     return draft.attachments.filter((attachment) => attachment?.type !== "image");
   }, [draft]);
 
+  function registerFieldPosition(field, y) {
+    fieldPositionsRef.current[field] = y;
+  }
+
+  function scrollToField(field) {
+    const y = fieldPositionsRef.current[field];
+
+    if (typeof y !== "number") return;
+
+    setTimeout(() => {
+      formScrollRef.current?.scrollTo({
+        y: Math.max(0, y - 120),
+        animated: true,
+      });
+    }, 250);
+  }
+
   function openImageViewer(index) {
     setViewerIndex(index);
     setViewerVisible(true);
@@ -165,6 +186,10 @@ export default function TripItemDetails() {
 
   function startEdit(field) {
     setEditingField(field);
+
+    setTimeout(() => {
+      scrollToField(field);
+    }, 50);
   }
 
   function cancelEdit() {
@@ -538,476 +563,532 @@ export default function TripItemDetails() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar barStyle="dark-content" />
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        <View style={styles.header}>
-          <Pressable onPress={() => router.back()} style={styles.iconButton}>
-            <Ionicons name="chevron-back" size={24} color={TEXT} />
-          </Pressable>
 
-          <Text style={styles.headerTitle}>Activity Details</Text>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 20}
+      >
+        <ScrollView
+          ref={formScrollRef}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
+        >
+          <View style={styles.header}>
+            <Pressable onPress={() => router.back()} style={styles.iconButton}>
+              <Ionicons name="chevron-back" size={24} color={TEXT} />
+            </Pressable>
 
-          <Pressable style={styles.iconButton} onPress={onDelete}>
-            <Ionicons name="trash-outline" size={22} color="#D9534F" />
-          </Pressable>
-        </View>
+            <Text style={styles.headerTitle}>Activity Details</Text>
 
-        {imageAttachments.length > 0 ? (
-          <ScrollView
-            horizontal
-            pagingEnabled
-            showsHorizontalScrollIndicator={false}
-            style={styles.heroScroller}
-            contentContainerStyle={styles.heroScrollerContent}
-          >
-            {imageAttachments.map((attachment, index) => (
-              <Pressable
-                key={attachment.id}
-                onPress={() => openImageViewer(index)}
-                style={styles.heroImageWrap}
-              >
-                <Image
-                  source={{ uri: getAttachmentDisplayUri(attachment) }}
-                  style={styles.heroImage}
-                  resizeMode="contain"
-                />
-              </Pressable>
-            ))}
-          </ScrollView>
-        ) : (
-          <View style={styles.noPhotoCard}>
-            <Ionicons name="image-outline" size={26} color="#9CA3AF" />
-            <Text style={styles.noPhotoText}>No photos added</Text>
-          </View>
-        )}
-
-        <View style={styles.summaryCard}>
-          <View style={styles.summaryTop}>
-            <View style={styles.categoryBadge}>
-              <Text style={styles.categoryBadgeText}>
-                {CATEGORIES.find((c) => c.key === draft.category)?.label || "Item"}
-              </Text>
-            </View>
-            <Text style={styles.priceLarge}>${Number(draft.price ?? 0)}</Text>
+            <Pressable style={styles.iconButton} onPress={onDelete}>
+              <Ionicons name="trash-outline" size={22} color="#D9534F" />
+            </Pressable>
           </View>
 
-          <Text style={styles.mainTitle}>{draft.description || "No description"}</Text>
-
-          <View style={styles.summaryRow}>
-            <Ionicons name="calendar-outline" size={16} color="#6B7280" />
-            <Text style={styles.summaryText}>{draft.dateLabel || "—"}</Text>
-          </View>
-
-          <View style={styles.summaryRow}>
-            <Ionicons name="time-outline" size={16} color="#6B7280" />
-            <Text style={styles.summaryText}>{draft.timeLabel || "—"}</Text>
-          </View>
-
-          <View style={styles.summaryRow}>
-            <Ionicons name="location-outline" size={16} color="#6B7280" />
-            <Text style={styles.summaryText}>{draft.location || "—"}</Text>
-          </View>
-        </View>
-
-        <View style={styles.infoCard}>
-          <View style={styles.rowBetween}>
-            <Text style={styles.infoLabel}>Description</Text>
-            {!editingDescription ? (
-              <Pressable onPress={() => startEdit("description")} style={styles.editIconButton}>
-                <Ionicons name="create-outline" size={18} color={BLUE} />
-              </Pressable>
-            ) : null}
-          </View>
-
-          {!editingDescription ? (
-            <Text style={styles.infoValue}>{draft.description || "—"}</Text>
-          ) : (
-            <>
-              <TextInput
-                style={[styles.input, styles.multilineInput]}
-                value={draft.description || ""}
-                onChangeText={(text) =>
-                  setDraft((prev) => ({
-                    ...prev,
-                    description: text,
-                  }))
-                }
-                placeholder="Enter description"
-                placeholderTextColor="#B8B8B8"
-                multiline
-              />
-
-              <View style={styles.editActionRow}>
-                <Pressable style={styles.cancelButton} onPress={cancelEdit}>
-                  <Text style={styles.cancelButtonText}>Cancel</Text>
+          {imageAttachments.length > 0 ? (
+            <ScrollView
+              horizontal
+              pagingEnabled
+              showsHorizontalScrollIndicator={false}
+              style={styles.heroScroller}
+              contentContainerStyle={styles.heroScrollerContent}
+            >
+              {imageAttachments.map((attachment, index) => (
+                <Pressable
+                  key={attachment.id}
+                  onPress={() => openImageViewer(index)}
+                  style={styles.heroImageWrap}
+                >
+                  <Image
+                    source={{ uri: getAttachmentDisplayUri(attachment) }}
+                    style={styles.heroImage}
+                    resizeMode="contain"
+                  />
                 </Pressable>
-                <Pressable style={styles.saveButton} onPress={saveDraft} disabled={saving}>
-                  <Text style={styles.saveButtonText}>{saving ? "Saving..." : "Save"}</Text>
-                </Pressable>
-              </View>
-            </>
-          )}
-        </View>
-
-        <View style={styles.infoCard}>
-          <View style={styles.rowBetween}>
-            <Text style={styles.infoLabel}>Location</Text>
-            {!editingLocation ? (
-              <Pressable onPress={() => startEdit("location")} style={styles.editIconButton}>
-                <Ionicons name="create-outline" size={18} color={BLUE} />
-              </Pressable>
-            ) : null}
-          </View>
-
-          {!editingLocation ? (
-            <Text style={styles.infoValue}>{draft.location || "—"}</Text>
-          ) : (
-            <>
-              <TextInput
-                style={styles.input}
-                value={draft.location || ""}
-                onChangeText={(text) =>
-                  setDraft((prev) => ({
-                    ...prev,
-                    location: text,
-                  }))
-                }
-                placeholder="Enter location"
-                placeholderTextColor="#B8B8B8"
-              />
-
-              <View style={styles.editActionRow}>
-                <Pressable style={styles.cancelButton} onPress={cancelEdit}>
-                  <Text style={styles.cancelButtonText}>Cancel</Text>
-                </Pressable>
-                <Pressable style={styles.saveButton} onPress={saveDraft} disabled={saving}>
-                  <Text style={styles.saveButtonText}>{saving ? "Saving..." : "Save"}</Text>
-                </Pressable>
-              </View>
-            </>
-          )}
-        </View>
-
-        <View style={styles.infoCard}>
-          <View style={styles.rowBetween}>
-            <Text style={styles.infoLabel}>Reservation Number</Text>
-            {!editingReservationNumber ? (
-              <Pressable onPress={() => startEdit("reservationNumber")} style={styles.editIconButton}>
-                <Ionicons name="create-outline" size={18} color={BLUE} />
-              </Pressable>
-            ) : null}
-          </View>
-
-          {!editingReservationNumber ? (
-            <Text style={styles.infoValue}>{draft.reservationNumber || "—"}</Text>
-          ) : (
-            <>
-              <TextInput
-                style={styles.input}
-                value={draft.reservationNumber || ""}
-                onChangeText={(text) =>
-                  setDraft((prev) => ({
-                    ...prev,
-                    reservationNumber: text,
-                  }))
-                }
-                placeholder="Enter reservation number"
-                placeholderTextColor="#B8B8B8"
-              />
-
-              <View style={styles.editActionRow}>
-                <Pressable style={styles.cancelButton} onPress={cancelEdit}>
-                  <Text style={styles.cancelButtonText}>Cancel</Text>
-                </Pressable>
-                <Pressable style={styles.saveButton} onPress={saveDraft} disabled={saving}>
-                  <Text style={styles.saveButtonText}>{saving ? "Saving..." : "Save"}</Text>
-                </Pressable>
-              </View>
-            </>
-          )}
-        </View>
-
-        <View style={styles.infoCard}>
-          <View style={styles.rowBetween}>
-            <Text style={styles.infoLabel}>Category</Text>
-            {!editingCategory ? (
-              <Pressable onPress={() => startEdit("category")} style={styles.editIconButton}>
-                <Ionicons name="create-outline" size={18} color={BLUE} />
-              </Pressable>
-            ) : null}
-          </View>
-
-          {!editingCategory ? (
-            <Text style={styles.infoValue}>
-              {CATEGORIES.find((c) => c.key === draft.category)?.label || "—"}
-            </Text>
-          ) : (
-            <>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoryRow}>
-                {CATEGORIES.map((cat) => {
-                  const active = draft.category === cat.key;
-                  return (
-                    <Pressable
-                      key={cat.key}
-                      style={[styles.categoryPill, active && styles.categoryPillActive]}
-                      onPress={() =>
-                        setDraft((prev) => ({
-                          ...prev,
-                          category: cat.key,
-                        }))
-                      }
-                    >
-                      <Text style={[styles.categoryPillText, active && styles.categoryPillTextActive]}>
-                        {cat.label}
-                      </Text>
-                    </Pressable>
-                  );
-                })}
-              </ScrollView>
-
-              <View style={styles.editActionRow}>
-                <Pressable style={styles.cancelButton} onPress={cancelEdit}>
-                  <Text style={styles.cancelButtonText}>Cancel</Text>
-                </Pressable>
-                <Pressable style={styles.saveButton} onPress={saveDraft} disabled={saving}>
-                  <Text style={styles.saveButtonText}>{saving ? "Saving..." : "Save"}</Text>
-                </Pressable>
-              </View>
-            </>
-          )}
-        </View>
-
-        <View style={styles.infoCard}>
-          <View style={styles.rowBetween}>
-            <Text style={styles.infoLabel}>Price</Text>
-            {!editingPrice ? (
-              <Pressable onPress={() => startEdit("price")} style={styles.editIconButton}>
-                <Ionicons name="create-outline" size={18} color={BLUE} />
-              </Pressable>
-            ) : null}
-          </View>
-
-          {!editingPrice ? (
-            <Text style={styles.infoValue}>${Number(draft.price ?? 0)}</Text>
-          ) : (
-            <>
-              <Text style={styles.pricePreview}>${Number(draft.price ?? 0)}</Text>
-              <Slider
-                style={{ width: "100%", height: 40 }}
-                minimumValue={0}
-                maximumValue={1000}
-                step={1}
-                value={Number(draft.price ?? 0)}
-                minimumTrackTintColor={BLUE}
-                maximumTrackTintColor="#D5D5D5"
-                thumbTintColor={BLUE}
-                onValueChange={(value) =>
-                  setDraft((prev) => ({
-                    ...prev,
-                    price: value,
-                  }))
-                }
-              />
-
-              <View style={styles.editActionRow}>
-                <Pressable style={styles.cancelButton} onPress={cancelEdit}>
-                  <Text style={styles.cancelButtonText}>Cancel</Text>
-                </Pressable>
-                <Pressable style={styles.saveButton} onPress={saveDraft} disabled={saving}>
-                  <Text style={styles.saveButtonText}>{saving ? "Saving..." : "Save"}</Text>
-                </Pressable>
-              </View>
-            </>
-          )}
-        </View>
-
-        <View style={styles.infoCard}>
-          <View style={styles.rowBetween}>
-            <Text style={styles.infoLabel}>Date</Text>
-            {!editingDate ? (
-              <Pressable onPress={() => startEdit("date")} style={styles.editIconButton}>
-                <Ionicons name="create-outline" size={18} color={BLUE} />
-              </Pressable>
-            ) : null}
-          </View>
-
-          {!editingDate ? (
-            <Text style={styles.infoValue}>{draft.dateLabel || "—"}</Text>
-          ) : (
-            <>
-              <Pressable style={styles.timeButton} onPress={() => setShowDatePicker(true)}>
-                <Text style={styles.timeButtonText}>{draft.dateLabel || "Select a date"}</Text>
-                <Ionicons name="calendar-outline" size={20} color={TEXT} />
-              </Pressable>
-
-              {showDatePicker && (
-                <DateTimePicker
-                  value={draft.dateObject}
-                  mode="date"
-                  display="default"
-                  onChange={(event, selectedDate) => {
-                    setShowDatePicker(false);
-                    if (selectedDate) {
-                      setDraft((prev) => {
-                        const next = new Date(prev.dateObject);
-                        next.setFullYear(selectedDate.getFullYear());
-                        next.setMonth(selectedDate.getMonth());
-                        next.setDate(selectedDate.getDate());
-                        return {
-                          ...prev,
-                          dateObject: next,
-                        };
-                      });
-                    }
-                  }}
-                />
-              )}
-
-              <View style={styles.editActionRow}>
-                <Pressable style={styles.cancelButton} onPress={cancelEdit}>
-                  <Text style={styles.cancelButtonText}>Cancel</Text>
-                </Pressable>
-                <Pressable style={styles.saveButton} onPress={saveDraft} disabled={saving}>
-                  <Text style={styles.saveButtonText}>{saving ? "Saving..." : "Save"}</Text>
-                </Pressable>
-              </View>
-            </>
-          )}
-        </View>
-
-        <View style={styles.infoCard}>
-          <View style={styles.rowBetween}>
-            <Text style={styles.infoLabel}>Time</Text>
-            {!editingTime ? (
-              <Pressable onPress={() => startEdit("time")} style={styles.editIconButton}>
-                <Ionicons name="create-outline" size={18} color={BLUE} />
-              </Pressable>
-            ) : null}
-          </View>
-
-          {!editingTime ? (
-            <Text style={styles.infoValue}>{draft.timeLabel || "—"}</Text>
-          ) : (
-            <>
-              <Pressable style={styles.timeButton} onPress={() => setShowTimePicker(true)}>
-                <Text style={styles.timeButtonText}>{formatTime(draft.dateObject)}</Text>
-                <Ionicons name="time-outline" size={20} color={TEXT} />
-              </Pressable>
-
-              {showTimePicker && (
-                <DateTimePicker
-                  value={draft.dateObject}
-                  mode="time"
-                  is24Hour={false}
-                  display="default"
-                  onChange={(event, selectedDate) => {
-                    setShowTimePicker(false);
-                    if (selectedDate) {
-                      setDraft((prev) => {
-                        const next = new Date(prev.dateObject);
-                        next.setHours(selectedDate.getHours());
-                        next.setMinutes(selectedDate.getMinutes());
-                        return {
-                          ...prev,
-                          dateObject: next,
-                        };
-                      });
-                    }
-                  }}
-                />
-              )}
-
-              <View style={styles.editActionRow}>
-                <Pressable style={styles.cancelButton} onPress={cancelEdit}>
-                  <Text style={styles.cancelButtonText}>Cancel</Text>
-                </Pressable>
-                <Pressable style={styles.saveButton} onPress={saveDraft} disabled={saving}>
-                  <Text style={styles.saveButtonText}>{saving ? "Saving..." : "Save"}</Text>
-                </Pressable>
-              </View>
-            </>
-          )}
-        </View>
-
-        <View style={styles.infoCard}>
-          <View style={styles.rowBetween}>
-            <Text style={styles.infoLabel}>Attachments</Text>
-            {!editingAttachments ? (
-              <Pressable onPress={() => startEdit("attachments")} style={styles.editIconButton}>
-                <Ionicons name="create-outline" size={18} color={BLUE} />
-              </Pressable>
-            ) : null}
-          </View>
-
-          {imageAttachments.length === 0 && documentAttachments.length === 0 ? (
-            <Text style={styles.infoValue}>—</Text>
-          ) : (
-            <>
-              {imageAttachments.length > 0 ? (
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.attachmentsRow}>
-                  {imageAttachments.map((attachment, index) => (
-                    <View key={attachment.id} style={styles.attachmentCard}>
-                      <Pressable onPress={() => openImageViewer(index)}>
-                        <Image
-                          source={{ uri: getAttachmentDisplayUri(attachment) }}
-                          style={styles.attachmentImage}
-                          resizeMode="contain"
-                        />
-                      </Pressable>
-
-                      <Text numberOfLines={1} style={styles.attachmentName}>
-                        {attachment.name}
-                      </Text>
-
-                      {editingAttachments ? (
-                        <Pressable
-                          style={styles.removeAttachmentButton}
-                          onPress={() => removeAttachment(attachment.id)}
-                        >
-                          <Ionicons name="close-circle" size={20} color="#D9534F" />
-                        </Pressable>
-                      ) : null}
-                    </View>
-                  ))}
-                </ScrollView>
-              ) : null}
-
-              {documentAttachments.map((attachment) => (
-                <View key={attachment.id} style={styles.documentRow}>
-                  <Ionicons name="document-text-outline" size={18} color={BLUE} />
-                  <Text style={styles.documentName}>{attachment.name}</Text>
-                  {editingAttachments ? (
-                    <Pressable onPress={() => removeAttachment(attachment.id)}>
-                      <Ionicons name="close-circle" size={20} color="#D9534F" />
-                    </Pressable>
-                  ) : null}
-                </View>
               ))}
-            </>
+            </ScrollView>
+          ) : (
+            <View style={styles.noPhotoCard}>
+              <Ionicons name="image-outline" size={26} color="#9CA3AF" />
+              <Text style={styles.noPhotoText}>No photos added</Text>
+            </View>
           )}
 
-          {editingAttachments ? (
-            <>
-              <Pressable style={styles.addAttachmentButton} onPress={openAttachmentPicker}>
-                <Ionicons name="add-circle-outline" size={18} color={BLUE} />
-                <Text style={styles.addAttachmentButtonText}>Add Attachment</Text>
-              </Pressable>
-
-              <View style={styles.editActionRow}>
-                <Pressable style={styles.cancelButton} onPress={cancelEdit}>
-                  <Text style={styles.cancelButtonText}>Cancel</Text>
-                </Pressable>
-                <Pressable style={styles.saveButton} onPress={saveDraft} disabled={saving}>
-                  <Text style={styles.saveButtonText}>{saving ? "Saving..." : "Save"}</Text>
-                </Pressable>
+          <View style={styles.summaryCard}>
+            <View style={styles.summaryTop}>
+              <View style={styles.categoryBadge}>
+                <Text style={styles.categoryBadgeText}>
+                  {CATEGORIES.find((c) => c.key === draft.category)?.label || "Item"}
+                </Text>
               </View>
-            </>
-          ) : null}
-        </View>
+              <Text style={styles.priceLarge}>${Number(draft.price ?? 0)}</Text>
+            </View>
 
-        <Pressable style={styles.deleteButton} onPress={onDelete}>
-          <Text style={styles.deleteButtonText}>DELETE ACTIVITY</Text>
-        </Pressable>
-      </ScrollView>
+            <Text style={styles.mainTitle}>{draft.description || "No description"}</Text>
+
+            <View style={styles.summaryRow}>
+              <Ionicons name="calendar-outline" size={16} color="#6B7280" />
+              <Text style={styles.summaryText}>{draft.dateLabel || "—"}</Text>
+            </View>
+
+            <View style={styles.summaryRow}>
+              <Ionicons name="time-outline" size={16} color="#6B7280" />
+              <Text style={styles.summaryText}>{draft.timeLabel || "—"}</Text>
+            </View>
+
+            <View style={styles.summaryRow}>
+              <Ionicons name="location-outline" size={16} color="#6B7280" />
+              <Text style={styles.summaryText}>{draft.location || "—"}</Text>
+            </View>
+          </View>
+
+          <View
+            style={styles.infoCard}
+            onLayout={(event) =>
+              registerFieldPosition("description", event.nativeEvent.layout.y)
+            }
+          >
+            <View style={styles.rowBetween}>
+              <Text style={styles.infoLabel}>Description</Text>
+              {!editingDescription ? (
+                <Pressable onPress={() => startEdit("description")} style={styles.editIconButton}>
+                  <Ionicons name="create-outline" size={18} color={BLUE} />
+                </Pressable>
+              ) : null}
+            </View>
+
+            {!editingDescription ? (
+              <Text style={styles.infoValue}>{draft.description || "—"}</Text>
+            ) : (
+              <>
+                <TextInput
+                  style={[styles.input, styles.multilineInput]}
+                  value={draft.description || ""}
+                  onChangeText={(text) =>
+                    setDraft((prev) => ({
+                      ...prev,
+                      description: text,
+                    }))
+                  }
+                  onFocus={() => scrollToField("description")}
+                  placeholder="Enter description"
+                  placeholderTextColor="#B8B8B8"
+                  multiline
+                />
+
+                <View style={styles.editActionRow}>
+                  <Pressable style={styles.cancelButton} onPress={cancelEdit}>
+                    <Text style={styles.cancelButtonText}>Cancel</Text>
+                  </Pressable>
+                  <Pressable style={styles.saveButton} onPress={saveDraft} disabled={saving}>
+                    <Text style={styles.saveButtonText}>{saving ? "Saving..." : "Save"}</Text>
+                  </Pressable>
+                </View>
+              </>
+            )}
+          </View>
+
+          <View
+            style={styles.infoCard}
+            onLayout={(event) =>
+              registerFieldPosition("location", event.nativeEvent.layout.y)
+            }
+          >
+            <View style={styles.rowBetween}>
+              <Text style={styles.infoLabel}>Location</Text>
+              {!editingLocation ? (
+                <Pressable onPress={() => startEdit("location")} style={styles.editIconButton}>
+                  <Ionicons name="create-outline" size={18} color={BLUE} />
+                </Pressable>
+              ) : null}
+            </View>
+
+            {!editingLocation ? (
+              <Text style={styles.infoValue}>{draft.location || "—"}</Text>
+            ) : (
+              <>
+                <TextInput
+                  style={styles.input}
+                  value={draft.location || ""}
+                  onChangeText={(text) =>
+                    setDraft((prev) => ({
+                      ...prev,
+                      location: text,
+                    }))
+                  }
+                  onFocus={() => scrollToField("location")}
+                  placeholder="Enter location"
+                  placeholderTextColor="#B8B8B8"
+                />
+
+                <View style={styles.editActionRow}>
+                  <Pressable style={styles.cancelButton} onPress={cancelEdit}>
+                    <Text style={styles.cancelButtonText}>Cancel</Text>
+                  </Pressable>
+                  <Pressable style={styles.saveButton} onPress={saveDraft} disabled={saving}>
+                    <Text style={styles.saveButtonText}>{saving ? "Saving..." : "Save"}</Text>
+                  </Pressable>
+                </View>
+              </>
+            )}
+          </View>
+
+          <View
+            style={styles.infoCard}
+            onLayout={(event) =>
+              registerFieldPosition("reservationNumber", event.nativeEvent.layout.y)
+            }
+          >
+            <View style={styles.rowBetween}>
+              <Text style={styles.infoLabel}>Reservation Number</Text>
+              {!editingReservationNumber ? (
+                <Pressable onPress={() => startEdit("reservationNumber")} style={styles.editIconButton}>
+                  <Ionicons name="create-outline" size={18} color={BLUE} />
+                </Pressable>
+              ) : null}
+            </View>
+
+            {!editingReservationNumber ? (
+              <Text style={styles.infoValue}>{draft.reservationNumber || "—"}</Text>
+            ) : (
+              <>
+                <TextInput
+                  style={styles.input}
+                  value={draft.reservationNumber || ""}
+                  onChangeText={(text) =>
+                    setDraft((prev) => ({
+                      ...prev,
+                      reservationNumber: text,
+                    }))
+                  }
+                  onFocus={() => scrollToField("reservationNumber")}
+                  placeholder="Enter reservation number"
+                  placeholderTextColor="#B8B8B8"
+                />
+
+                <View style={styles.editActionRow}>
+                  <Pressable style={styles.cancelButton} onPress={cancelEdit}>
+                    <Text style={styles.cancelButtonText}>Cancel</Text>
+                  </Pressable>
+                  <Pressable style={styles.saveButton} onPress={saveDraft} disabled={saving}>
+                    <Text style={styles.saveButtonText}>{saving ? "Saving..." : "Save"}</Text>
+                  </Pressable>
+                </View>
+              </>
+            )}
+          </View>
+
+          <View
+            style={styles.infoCard}
+            onLayout={(event) =>
+              registerFieldPosition("category", event.nativeEvent.layout.y)
+            }
+          >
+            <View style={styles.rowBetween}>
+              <Text style={styles.infoLabel}>Category</Text>
+              {!editingCategory ? (
+                <Pressable onPress={() => startEdit("category")} style={styles.editIconButton}>
+                  <Ionicons name="create-outline" size={18} color={BLUE} />
+                </Pressable>
+              ) : null}
+            </View>
+
+            {!editingCategory ? (
+              <Text style={styles.infoValue}>
+                {CATEGORIES.find((c) => c.key === draft.category)?.label || "—"}
+              </Text>
+            ) : (
+              <>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoryRow}>
+                  {CATEGORIES.map((cat) => {
+                    const active = draft.category === cat.key;
+                    return (
+                      <Pressable
+                        key={cat.key}
+                        style={[styles.categoryPill, active && styles.categoryPillActive]}
+                        onPress={() =>
+                          setDraft((prev) => ({
+                            ...prev,
+                            category: cat.key,
+                          }))
+                        }
+                      >
+                        <Text style={[styles.categoryPillText, active && styles.categoryPillTextActive]}>
+                          {cat.label}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </ScrollView>
+
+                <View style={styles.editActionRow}>
+                  <Pressable style={styles.cancelButton} onPress={cancelEdit}>
+                    <Text style={styles.cancelButtonText}>Cancel</Text>
+                  </Pressable>
+                  <Pressable style={styles.saveButton} onPress={saveDraft} disabled={saving}>
+                    <Text style={styles.saveButtonText}>{saving ? "Saving..." : "Save"}</Text>
+                  </Pressable>
+                </View>
+              </>
+            )}
+          </View>
+
+          <View
+            style={styles.infoCard}
+            onLayout={(event) =>
+              registerFieldPosition("price", event.nativeEvent.layout.y)
+            }
+          >
+            <View style={styles.rowBetween}>
+              <Text style={styles.infoLabel}>Price</Text>
+              {!editingPrice ? (
+                <Pressable onPress={() => startEdit("price")} style={styles.editIconButton}>
+                  <Ionicons name="create-outline" size={18} color={BLUE} />
+                </Pressable>
+              ) : null}
+            </View>
+
+            {!editingPrice ? (
+              <Text style={styles.infoValue}>${Number(draft.price ?? 0)}</Text>
+            ) : (
+              <>
+                <Text style={styles.pricePreview}>${Number(draft.price ?? 0)}</Text>
+                <Slider
+                  style={{ width: "100%", height: 40 }}
+                  minimumValue={0}
+                  maximumValue={1000}
+                  step={1}
+                  value={Number(draft.price ?? 0)}
+                  minimumTrackTintColor={BLUE}
+                  maximumTrackTintColor="#D5D5D5"
+                  thumbTintColor={BLUE}
+                  onValueChange={(value) =>
+                    setDraft((prev) => ({
+                      ...prev,
+                      price: value,
+                    }))
+                  }
+                />
+
+                <View style={styles.editActionRow}>
+                  <Pressable style={styles.cancelButton} onPress={cancelEdit}>
+                    <Text style={styles.cancelButtonText}>Cancel</Text>
+                  </Pressable>
+                  <Pressable style={styles.saveButton} onPress={saveDraft} disabled={saving}>
+                    <Text style={styles.saveButtonText}>{saving ? "Saving..." : "Save"}</Text>
+                  </Pressable>
+                </View>
+              </>
+            )}
+          </View>
+
+          <View
+            style={styles.infoCard}
+            onLayout={(event) =>
+              registerFieldPosition("date", event.nativeEvent.layout.y)
+            }
+          >
+            <View style={styles.rowBetween}>
+              <Text style={styles.infoLabel}>Date</Text>
+              {!editingDate ? (
+                <Pressable onPress={() => startEdit("date")} style={styles.editIconButton}>
+                  <Ionicons name="create-outline" size={18} color={BLUE} />
+                </Pressable>
+              ) : null}
+            </View>
+
+            {!editingDate ? (
+              <Text style={styles.infoValue}>{draft.dateLabel || "—"}</Text>
+            ) : (
+              <>
+                <Pressable style={styles.timeButton} onPress={() => setShowDatePicker(true)}>
+                  <Text style={styles.timeButtonText}>{draft.dateLabel || "Select a date"}</Text>
+                  <Ionicons name="calendar-outline" size={20} color={TEXT} />
+                </Pressable>
+
+                {showDatePicker && (
+                  <DateTimePicker
+                    value={draft.dateObject}
+                    mode="date"
+                    display="default"
+                    onChange={(event, selectedDate) => {
+                      setShowDatePicker(false);
+                      if (selectedDate) {
+                        setDraft((prev) => {
+                          const next = new Date(prev.dateObject);
+                          next.setFullYear(selectedDate.getFullYear());
+                          next.setMonth(selectedDate.getMonth());
+                          next.setDate(selectedDate.getDate());
+                          return {
+                            ...prev,
+                            dateObject: next,
+                          };
+                        });
+                      }
+                    }}
+                  />
+                )}
+
+                <View style={styles.editActionRow}>
+                  <Pressable style={styles.cancelButton} onPress={cancelEdit}>
+                    <Text style={styles.cancelButtonText}>Cancel</Text>
+                  </Pressable>
+                  <Pressable style={styles.saveButton} onPress={saveDraft} disabled={saving}>
+                    <Text style={styles.saveButtonText}>{saving ? "Saving..." : "Save"}</Text>
+                  </Pressable>
+                </View>
+              </>
+            )}
+          </View>
+
+          <View
+            style={styles.infoCard}
+            onLayout={(event) =>
+              registerFieldPosition("time", event.nativeEvent.layout.y)
+            }
+          >
+            <View style={styles.rowBetween}>
+              <Text style={styles.infoLabel}>Time</Text>
+              {!editingTime ? (
+                <Pressable onPress={() => startEdit("time")} style={styles.editIconButton}>
+                  <Ionicons name="create-outline" size={18} color={BLUE} />
+                </Pressable>
+              ) : null}
+            </View>
+
+            {!editingTime ? (
+              <Text style={styles.infoValue}>{draft.timeLabel || "—"}</Text>
+            ) : (
+              <>
+                <Pressable style={styles.timeButton} onPress={() => setShowTimePicker(true)}>
+                  <Text style={styles.timeButtonText}>{formatTime(draft.dateObject)}</Text>
+                  <Ionicons name="time-outline" size={20} color={TEXT} />
+                </Pressable>
+
+                {showTimePicker && (
+                  <DateTimePicker
+                    value={draft.dateObject}
+                    mode="time"
+                    is24Hour={false}
+                    display="default"
+                    onChange={(event, selectedDate) => {
+                      setShowTimePicker(false);
+                      if (selectedDate) {
+                        setDraft((prev) => {
+                          const next = new Date(prev.dateObject);
+                          next.setHours(selectedDate.getHours());
+                          next.setMinutes(selectedDate.getMinutes());
+                          return {
+                            ...prev,
+                            dateObject: next,
+                          };
+                        });
+                      }
+                    }}
+                  />
+                )}
+
+                <View style={styles.editActionRow}>
+                  <Pressable style={styles.cancelButton} onPress={cancelEdit}>
+                    <Text style={styles.cancelButtonText}>Cancel</Text>
+                  </Pressable>
+                  <Pressable style={styles.saveButton} onPress={saveDraft} disabled={saving}>
+                    <Text style={styles.saveButtonText}>{saving ? "Saving..." : "Save"}</Text>
+                  </Pressable>
+                </View>
+              </>
+            )}
+          </View>
+
+          <View
+            style={styles.infoCard}
+            onLayout={(event) =>
+              registerFieldPosition("attachments", event.nativeEvent.layout.y)
+            }
+          >
+            <View style={styles.rowBetween}>
+              <Text style={styles.infoLabel}>Attachments</Text>
+              {!editingAttachments ? (
+                <Pressable onPress={() => startEdit("attachments")} style={styles.editIconButton}>
+                  <Ionicons name="create-outline" size={18} color={BLUE} />
+                </Pressable>
+              ) : null}
+            </View>
+
+            {imageAttachments.length === 0 && documentAttachments.length === 0 ? (
+              <Text style={styles.infoValue}>—</Text>
+            ) : (
+              <>
+                {imageAttachments.length > 0 ? (
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.attachmentsRow}>
+                    {imageAttachments.map((attachment, index) => (
+                      <View key={attachment.id} style={styles.attachmentCard}>
+                        <Pressable onPress={() => openImageViewer(index)}>
+                          <Image
+                            source={{ uri: getAttachmentDisplayUri(attachment) }}
+                            style={styles.attachmentImage}
+                            resizeMode="contain"
+                          />
+                        </Pressable>
+
+                        <Text numberOfLines={1} style={styles.attachmentName}>
+                          {attachment.name}
+                        </Text>
+
+                        {editingAttachments ? (
+                          <Pressable
+                            style={styles.removeAttachmentButton}
+                            onPress={() => removeAttachment(attachment.id)}
+                          >
+                            <Ionicons name="close-circle" size={20} color="#D9534F" />
+                          </Pressable>
+                        ) : null}
+                      </View>
+                    ))}
+                  </ScrollView>
+                ) : null}
+
+                {documentAttachments.map((attachment) => (
+                  <View key={attachment.id} style={styles.documentRow}>
+                    <Ionicons name="document-text-outline" size={18} color={BLUE} />
+                    <Text style={styles.documentName}>{attachment.name}</Text>
+                    {editingAttachments ? (
+                      <Pressable onPress={() => removeAttachment(attachment.id)}>
+                        <Ionicons name="close-circle" size={20} color="#D9534F" />
+                      </Pressable>
+                    ) : null}
+                  </View>
+                ))}
+              </>
+            )}
+
+            {editingAttachments ? (
+              <>
+                <Pressable style={styles.addAttachmentButton} onPress={openAttachmentPicker}>
+                  <Ionicons name="add-circle-outline" size={18} color={BLUE} />
+                  <Text style={styles.addAttachmentButtonText}>Add Attachment</Text>
+                </Pressable>
+
+                <View style={styles.editActionRow}>
+                  <Pressable style={styles.cancelButton} onPress={cancelEdit}>
+                    <Text style={styles.cancelButtonText}>Cancel</Text>
+                  </Pressable>
+                  <Pressable style={styles.saveButton} onPress={saveDraft} disabled={saving}>
+                    <Text style={styles.saveButtonText}>{saving ? "Saving..." : "Save"}</Text>
+                  </Pressable>
+                </View>
+              </>
+            ) : null}
+          </View>
+
+          <Pressable style={styles.deleteButton} onPress={onDelete}>
+            <Text style={styles.deleteButtonText}>DELETE ACTIVITY</Text>
+          </Pressable>
+        </ScrollView>
+      </KeyboardAvoidingView>
 
       <Modal visible={viewerVisible} transparent animationType="fade" onRequestClose={closeImageViewer}>
         <View style={styles.viewerOverlay}>
@@ -1055,7 +1136,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: 20,
     paddingTop: 8,
-    paddingBottom: 30,
+    paddingBottom: 180,
   },
 
   loadingWrap: {

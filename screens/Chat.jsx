@@ -44,6 +44,21 @@ function uniqueUids(values) {
   return Array.from(new Set((values || []).filter(Boolean)));
 }
 
+function getMillis(value) {
+  if (!value) return 0;
+
+  if (typeof value?.toDate === "function") {
+    return value.toDate().getTime();
+  }
+
+  if (typeof value?.seconds === "number") {
+    return value.seconds * 1000;
+  }
+
+  const parsed = new Date(value).getTime();
+  return Number.isNaN(parsed) ? 0 : parsed;
+}
+
 export default function GroupChatScreen() {
   const router = useRouter();
   const { chatId } = useLocalSearchParams();
@@ -57,6 +72,7 @@ export default function GroupChatScreen() {
   const [members, setMembers] = useState([]);
   const [messages, setMessages] = useState([]);
   const [inputText, setInputText] = useState("");
+  const [isPastTrip, setIsPastTrip] = useState(false);
 
   const [showSearch, setShowSearch] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -142,6 +158,9 @@ export default function GroupChatScreen() {
         setTripOwnerId(sourceTripOwnerId);
         setTripLocation(sourceTripData?.location || "Group Trip");
 
+        const endDateMillis = getMillis(sourceTripData?.endDate);
+        setIsPastTrip(endDateMillis > 0 && endDateMillis < Date.now());
+
         const participantUids = uniqueUids([
           ...chatMemberUids,
           ...(Array.isArray(sourceTripData?.memberIds) ? sourceTripData.memberIds : []),
@@ -204,7 +223,7 @@ export default function GroupChatScreen() {
 
   const handleSend = async () => {
     const text = inputText.trim();
-    if (!text || !currentUser) return;
+    if (!text || !currentUser || isPastTrip) return;
     setInputText("");
     try {
       await addDoc(collection(db, "groupchats", chatId, "messages"), {
@@ -374,24 +393,32 @@ export default function GroupChatScreen() {
           }
         />
 
-        <View style={styles.inputRow}>
-          <TextInput
-            style={styles.input}
-            placeholder="Message..."
-            placeholderTextColor="#94A3B8"
-            value={inputText}
-            onChangeText={setInputText}
-            multiline
-            maxLength={500}
-          />
-          <TouchableOpacity
-            style={[styles.sendBtn, !inputText.trim() && styles.sendBtnDisabled]}
-            onPress={handleSend}
-            disabled={!inputText.trim()}
-          >
-            <Ionicons name="arrow-up" size={20} color="#fff" />
-          </TouchableOpacity>
-        </View>
+        {isPastTrip ? (
+          <View style={styles.disabledChatWrap}>
+            <Text style={styles.disabledChatText}>
+              This trip has ended. You can still view the chat, but messaging is disabled.
+            </Text>
+          </View>
+        ) : (
+          <View style={styles.inputRow}>
+            <TextInput
+              style={styles.input}
+              placeholder="Message..."
+              placeholderTextColor="#94A3B8"
+              value={inputText}
+              onChangeText={setInputText}
+              multiline
+              maxLength={500}
+            />
+            <TouchableOpacity
+              style={[styles.sendBtn, !inputText.trim() && styles.sendBtnDisabled]}
+              onPress={handleSend}
+              disabled={!inputText.trim()}
+            >
+              <Ionicons name="arrow-up" size={20} color="#fff" />
+            </TouchableOpacity>
+          </View>
+        )}
       </KeyboardAvoidingView>
 
       <Modal visible={showSearch} animationType="slide" transparent>
@@ -601,6 +628,19 @@ const styles = StyleSheet.create({
   },
   sendBtnDisabled: {
     backgroundColor: "#A5B4FC",
+  },
+  disabledChatWrap: {
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderTopWidth: 1,
+    borderTopColor: BORDER,
+    backgroundColor: BG,
+  },
+  disabledChatText: {
+    textAlign: "center",
+    fontSize: 14,
+    fontWeight: "600",
+    color: MUTED,
   },
 
   modalOverlay: {

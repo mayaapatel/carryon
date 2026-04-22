@@ -37,6 +37,21 @@ function emptyPhotoSlot() {
   };
 }
 
+function getMillis(value) {
+  if (!value) return 0;
+
+  if (typeof value?.toDate === "function") {
+    return value.toDate().getTime();
+  }
+
+  if (typeof value?.seconds === "number") {
+    return value.seconds * 1000;
+  }
+
+  const parsed = new Date(value).getTime();
+  return Number.isNaN(parsed) ? 0 : parsed;
+}
+
 export default function MainTrip() {
   const router = useRouter();
   const params = useLocalSearchParams();
@@ -64,6 +79,11 @@ export default function MainTrip() {
   });
   const [heroPhoto, setHeroPhoto] = useState(emptyPhotoSlot());
   const [openingChat, setOpeningChat] = useState(false);
+  const [tripDates, setTripDates] = useState({
+    startDate: null,
+    endDate: null,
+  });
+  const [showChatButton, setShowChatButton] = useState(false);
 
   useEffect(() => {
     const user = auth.currentUser;
@@ -79,6 +99,11 @@ export default function MainTrip() {
         const data = snapshot.data() || {};
         const savedPhotos = data.tripPhotos || {};
 
+        setTripDates({
+          startDate: data.startDate || null,
+          endDate: data.endDate || null,
+        });
+
         setTripPhotos({
           slot1: savedPhotos.slot1 || emptyPhotoSlot(),
           slot2: savedPhotos.slot2 || emptyPhotoSlot(),
@@ -87,6 +112,19 @@ export default function MainTrip() {
         });
 
         setHeroPhoto(data.heroPhoto || emptyPhotoSlot());
+
+        const hasGroupToggle =
+          data.isGroupTrip === true ||
+          data.groupTrip === true ||
+          data.withGroup === true ||
+          data.isSharedTrip === true;
+
+        const hasGroupMembers =
+          (Array.isArray(data.memberIds) && data.memberIds.length > 0) ||
+          (Array.isArray(data.allowedUsers) && data.allowedUsers.length > 0) ||
+          (Array.isArray(data.sharedWith) && data.sharedWith.length > 0);
+
+        setShowChatButton(hasGroupToggle || hasGroupMembers);
       },
       (error) => {
         console.log("TRIP SNAPSHOT ERROR:", error);
@@ -380,42 +418,42 @@ export default function MainTrip() {
     ]);
   };
 
-const onOpenChat = async () => {
-  const user = auth.currentUser;
+  const onOpenChat = async () => {
+    const user = auth.currentUser;
 
-  if (!user || !tripId || openingChat) return;
+    if (!user || !tripId || openingChat) return;
 
-  try {
-    setOpeningChat(true);
+    try {
+      setOpeningChat(true);
 
-    const chatRef = doc(db, "groupchats", tripId);
-    const chatSnap = await getDoc(chatRef);
+      const chatRef = doc(db, "groupchats", tripId);
+      const chatSnap = await getDoc(chatRef);
 
-    if (!chatSnap.exists()) {
-      await setDoc(chatRef, {
-        tripId,
-        tripTitle,
-        ownerUid: user.uid,
-        members: [user.uid],
-        createdAt: new Date().toISOString(),
+      if (!chatSnap.exists()) {
+        await setDoc(chatRef, {
+          tripId,
+          tripTitle,
+          ownerUid: user.uid,
+          members: [user.uid],
+          createdAt: new Date().toISOString(),
+        });
+      }
+
+      router.push({
+        pathname: "/chat",
+        params: {
+          chatId: tripId,
+          tripId,
+          title: tripTitle,
+        },
       });
+    } catch (error) {
+      console.log("CHAT LOAD ERROR:", error);
+      Alert.alert("Error", error?.message || "Cannot open chat.");
+    } finally {
+      setOpeningChat(false);
     }
-
-    router.push({
-      pathname: "/chat",
-      params: {
-        chatId: tripId,
-        tripId,
-        title: tripTitle,
-      },
-    });
-  } catch (error) {
-    console.log("CHAT LOAD ERROR:", error);
-    Alert.alert("Error", error?.message || "Cannot open chat.");
-  } finally {
-    setOpeningChat(false);
-  }
-};
+  };
 
   const actuallyDeleteTrip = async () => {
     const user = auth.currentUser;
@@ -462,6 +500,9 @@ const onOpenChat = async () => {
   }
 
   const bigPhotoUri = getBigPhotoUri();
+  const now = Date.now();
+  const isPastTrip =
+    getMillis(tripDates.endDate) > 0 && getMillis(tripDates.endDate) < now;
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -481,14 +522,16 @@ const onOpenChat = async () => {
           </Text>
 
           <View style={styles.rightIcons}>
-        <Pressable
-          onPress={onOpenChat}
-          style={[styles.iconButton, { justifyContent: "center" }]}
-          hitSlop={8}
-          disabled={openingChat}
-        >
-          <Ionicons name="chatbubble-outline" size={20} color={BLUE} />
-        </Pressable>
+            {showChatButton && (
+              <Pressable
+                onPress={onOpenChat}
+                style={[styles.iconButton, { justifyContent: "center" }]}
+                hitSlop={8}
+                disabled={openingChat}
+              >
+                <Ionicons name="chatbubble-outline" size={20} color={BLUE} />
+              </Pressable>
+            )}
 
             <Pressable
               onPress={onDeleteTrip}
@@ -570,9 +613,11 @@ const onOpenChat = async () => {
           })}
         </View>
 
-        <Pressable onPress={onTodo} style={styles.btn}>
-          <Text style={styles.btnText}>My To-Do</Text>
-        </Pressable>
+        {!isPastTrip && (
+          <Pressable onPress={onTodo} style={styles.btn}>
+            <Text style={styles.btnText}>My To-Do</Text>
+          </Pressable>
+        )}
 
         <Pressable onPress={onAdd} style={styles.btn}>
           <Text style={styles.btnText}>Add Activity</Text>
@@ -597,14 +642,14 @@ const onOpenChat = async () => {
 }
 
 const styles = StyleSheet.create({
-  safe: { 
-    flex: 1, 
-    backgroundColor: "#DCE6FF" // same as dashboard
+  safe: {
+    flex: 1,
+    backgroundColor: "#DCE6FF",
   },
 
-  scroll: { 
-    paddingHorizontal: 18, 
-    paddingBottom: 10 
+  scroll: {
+    paddingHorizontal: 18,
+    paddingBottom: 10,
   },
 
   emptyWrap: {
@@ -724,7 +769,7 @@ const styles = StyleSheet.create({
     height: 110,
     borderRadius: 12,
     overflow: "hidden",
-    backgroundColor: "#D4DEFF", // same layer as trip cards
+    backgroundColor: "#D4DEFF",
     position: "relative",
     borderWidth: 1,
     borderColor: "#B4C6FF",
@@ -772,7 +817,7 @@ const styles = StyleSheet.create({
     position: "absolute",
     right: 8,
     bottom: 8,
-    backgroundColor: "#5A75F5", // lighter cohesive blue
+    backgroundColor: "#5A75F5",
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 999,
@@ -790,7 +835,7 @@ const styles = StyleSheet.create({
     width: "100%",
     height: 52,
     borderRadius: 12,
-    backgroundColor: "#5A75F5", // same as dashboard buttons
+    backgroundColor: "#5A75F5",
     alignItems: "center",
     justifyContent: "center",
     shadowColor: "#3F63F3",

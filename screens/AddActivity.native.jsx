@@ -5,7 +5,8 @@ import * as DocumentPicker from "expo-document-picker";
 import * as ImagePicker from "expo-image-picker";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { doc, getDoc } from "firebase/firestore";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import {
   Alert,
   Image,
@@ -70,14 +71,6 @@ function stripTime(date) {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate());
 }
 
-function datesEqual(a, b) {
-  return (
-    a.getFullYear() === b.getFullYear() &&
-    a.getMonth() === b.getMonth() &&
-    a.getDate() === b.getDate()
-  );
-}
-
 function buildDateFromParts(year, monthIndex, day, baseTime = null) {
   const hours = baseTime ? baseTime.getHours() : 12;
   const minutes = baseTime ? baseTime.getMinutes() : 0;
@@ -127,6 +120,9 @@ export default function AddActivity() {
   const editingId = params.editId ? String(params.editId) : null;
   const presetCategory = params.presetCategory ? String(params.presetCategory) : null;
 
+  const scrollRef = useRef(null);
+  const fieldPositionsRef = useRef({});
+
   const [category, setCategory] = useState("activity");
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [loadingEditData, setLoadingEditData] = useState(false);
@@ -140,13 +136,25 @@ export default function AddActivity() {
     hotel: createEmptyForm(),
   });
 
-  // map region state — shared for the currently visible map
   const [mapRegion, setMapRegion] = useState({
     latitude: 37.7749,
     longitude: -122.4194,
     latitudeDelta: 0.05,
     longitudeDelta: 0.05,
   });
+
+  function registerFieldPosition(field, y) {
+    fieldPositionsRef.current[field] = y;
+  }
+
+  function scrollToField(field) {
+    const y = fieldPositionsRef.current[field];
+    if (typeof y !== "number") return;
+
+    setTimeout(() => {
+      scrollRef.current?.scrollToPosition?.(0, Math.max(0, y - 140), true);
+    }, 120);
+  }
 
   useEffect(() => {
     if (presetCategory && !editingId) {
@@ -169,14 +177,14 @@ export default function AddActivity() {
         const rawStart = tripData.startDate?.toDate
           ? tripData.startDate.toDate()
           : tripData.startDate
-          ? new Date(tripData.startDate)
-          : null;
+            ? new Date(tripData.startDate)
+            : null;
 
         const rawEnd = tripData.endDate?.toDate
           ? tripData.endDate.toDate()
           : tripData.endDate
-          ? new Date(tripData.endDate)
-          : null;
+            ? new Date(tripData.endDate)
+            : null;
 
         if (rawStart && !Number.isNaN(rawStart.getTime())) {
           setTripStartDate(stripTime(rawStart));
@@ -209,7 +217,6 @@ export default function AddActivity() {
           const mIndex = MONTHS.indexOf(item.month);
           const yIndex = YEARS.indexOf(item.year);
 
-          // support both old string location and new object location
           const loc = item.location && typeof item.location === "object" ? item.location : {};
 
           const loadedForm = {
@@ -245,7 +252,11 @@ export default function AddActivity() {
           });
 
           if (loc.latitude && loc.longitude) {
-            setMapRegion(prev => ({ ...prev, latitude: loc.latitude, longitude: loc.longitude }));
+            setMapRegion((prev) => ({
+              ...prev,
+              latitude: loc.latitude,
+              longitude: loc.longitude,
+            }));
           }
         }
       } catch (error) {
@@ -293,15 +304,6 @@ export default function AddActivity() {
   const firstDayOfMonth = useMemo(() => {
     return new Date(currentYear, currentForm.monthIndex, 1).getDay();
   }, [currentYear, currentForm.monthIndex]);
-
-  const validDayRange = useMemo(() => {
-    return getValidDayRangeForMonth(
-      currentYear,
-      currentForm.monthIndex,
-      tripStartDate,
-      tripEndDate
-    );
-  }, [currentYear, currentForm.monthIndex, tripStartDate, tripEndDate]);
 
   const calendarCells = useMemo(() => {
     const cells = [];
@@ -790,10 +792,9 @@ export default function AddActivity() {
     }
   }
 
-  // location helpers for the map in add activity
   function updateLocationOnMap(lat, lng) {
     updateCurrentForm({ locationLatitude: lat, locationLongitude: lng });
-    setMapRegion(prev => ({ ...prev, latitude: lat, longitude: lng }));
+    setMapRegion((prev) => ({ ...prev, latitude: lat, longitude: lng }));
   }
 
   async function geocodeCurrentAddress() {
@@ -834,7 +835,20 @@ export default function AddActivity() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar barStyle="dark-content" />
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+
+ <KeyboardAwareScrollView
+  innerRef={(ref) => {
+    scrollRef.current = ref;
+  }}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
+        enableOnAndroid
+        extraScrollHeight={140}
+        extraHeight={160}
+        enableAutomaticScroll
+      >
         <View style={styles.header}>
           <Pressable onPress={() => router.back()} style={styles.iconButton}>
             <Ionicons name="chevron-back" size={24} color={TEXT} />
@@ -886,153 +900,205 @@ export default function AddActivity() {
           })}
         </ScrollView>
 
-        <Text style={styles.label}>
-          {category === "hotel" ? "Hotel / Reservation" : "Description"}
-        </Text>
-
-        <TextInput
-          style={styles.input}
-          placeholder={
-            category === "transportation"
-              ? "Flight, train, Uber, etc."
-              : category === "food"
-              ? "Restaurant, snack stop, etc."
-              : category === "hotel"
-              ? "Hotel name or reservation"
-              : "Write a description here"
+        <View
+          onLayout={(event) =>
+            registerFieldPosition("description", event.nativeEvent.layout.y)
           }
-          placeholderTextColor="#B8B8B8"
-          value={currentForm.description}
-          onChangeText={(text) => updateCurrentForm({ description: text })}
-        />
+        >
+          <Text style={styles.label}>
+            {category === "hotel" ? "Hotel / Reservation" : "Description"}
+          </Text>
 
-        <Text style={styles.label}>
-          {category === "hotel" ? "Location / Address" : "Location"}
-        </Text>
-
-        {/* address fields */}
-        {[
-          { label: "Street", key: "locationStreet" },
-          { label: "City", key: "locationCity" },
-          { label: "State", key: "locationState" },
-          { label: "ZIP", key: "locationZip" },
-        ].map((field) => (
           <TextInput
-            key={field.key}
             style={styles.input}
-            placeholder={field.label}
+            placeholder={
+              category === "transportation"
+                ? "Flight, train, Uber, etc."
+                : category === "food"
+                  ? "Restaurant, snack stop, etc."
+                  : category === "hotel"
+                    ? "Hotel name or reservation"
+                    : "Write a description here"
+            }
             placeholderTextColor="#B8B8B8"
-            value={currentForm[field.key]}
-            onChangeText={(text) => updateCurrentForm({ [field.key]: text })}
-            keyboardType={field.key === "locationZip" ? "numeric" : "default"}
+            value={currentForm.description}
+            onChangeText={(text) => updateCurrentForm({ description: text })}
+            onFocus={() => setTimeout(() => scrollToField("description"), 120)}
           />
-        ))}
-
-        <Pressable style={styles.showOnMapBtn} onPress={geocodeCurrentAddress}>
-          <Ionicons name="map-outline" size={18} color="#fff" />
-          <Text style={styles.showOnMapBtnText}>Show on Map</Text>
-        </Pressable>
-
-        {/* map */}
-        <View style={styles.mapWrap}>
-          <MapView
-            style={styles.map}
-            region={{ ...mapRegion, latitude: currentForm.locationLatitude, longitude: currentForm.locationLongitude }}
-            onPress={(e) => {
-              const { latitude, longitude } = e.nativeEvent.coordinate;
-              reverseGeocodeMapPress(latitude, longitude);
-            }}
-          >
-            <Marker coordinate={{ latitude: currentForm.locationLatitude, longitude: currentForm.locationLongitude }} />
-          </MapView>
         </View>
 
-        <Text style={styles.label}>Reservation Number</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="Optional"
-          placeholderTextColor="#B8B8B8"
-          value={currentForm.reservationNumber}
-          onChangeText={(text) => updateCurrentForm({ reservationNumber: text })}
-        />
+        <View
+          onLayout={(event) =>
+            registerFieldPosition("location", event.nativeEvent.layout.y)
+          }
+        >
+          <Text style={styles.label}>
+            {category === "hotel" ? "Location / Address" : "Location"}
+          </Text>
 
-        <Text style={styles.label}>Time</Text>
-        <Pressable style={styles.timeButton} onPress={() => setShowTimePicker(true)}>
-          <Text style={styles.timeButtonText}>{formatTime(currentForm.timeValue)}</Text>
-          <Ionicons name="time-outline" size={20} color={TEXT} />
-        </Pressable>
-
-        {showTimePicker && (
-          <DateTimePicker
-            value={currentForm.timeValue}
-            mode="time"
-            is24Hour={false}
-            display="default"
-            onChange={(event, selectedDate) => {
-              setShowTimePicker(false);
-              if (selectedDate) {
-                const next = new Date(currentForm.timeValue);
-                next.setHours(selectedDate.getHours());
-                next.setMinutes(selectedDate.getMinutes());
-                updateCurrentForm({ timeValue: next });
-              }
-            }}
-          />
-        )}
-
-        <View style={styles.priceHeader}>
-          <Text style={styles.priceLabel}>Price</Text>
-          <Text style={styles.priceValue}>${currentForm.price}</Text>
-        </View>
-
-        <View style={styles.priceRow}>
-          <View style={styles.sliderWrap}>
-            <Slider
-              style={{ width: "100%", height: 40 }}
-              minimumValue={0}
-              maximumValue={1000}
-              step={1}
-              value={currentForm.price}
-              minimumTrackTintColor={BLUE}
-              maximumTrackTintColor="#D5D5D5"
-              thumbTintColor={BLUE}
-              onValueChange={(value) => updateCurrentForm({ price: value })}
+          {[
+            { label: "Street", key: "locationStreet" },
+            { label: "City", key: "locationCity" },
+            { label: "State", key: "locationState" },
+            { label: "ZIP", key: "locationZip" },
+          ].map((field, index) => (
+            <TextInput
+              key={field.key}
+              style={styles.input}
+              placeholder={field.label}
+              placeholderTextColor="#B8B8B8"
+              value={currentForm[field.key]}
+              onChangeText={(text) => updateCurrentForm({ [field.key]: text })}
+              keyboardType={field.key === "locationZip" ? "numeric" : "default"}
+              onFocus={() => setTimeout(() => scrollToField("location"), 120)}
+              returnKeyType={index === 3 ? "done" : "next"}
             />
+          ))}
+
+          <Pressable style={styles.showOnMapBtn} onPress={geocodeCurrentAddress}>
+            <Ionicons name="map-outline" size={18} color="#fff" />
+            <Text style={styles.showOnMapBtnText}>Show on Map</Text>
+          </Pressable>
+
+          <View style={styles.mapWrap}>
+            <MapView
+              style={styles.map}
+              region={{
+                ...mapRegion,
+                latitude: currentForm.locationLatitude,
+                longitude: currentForm.locationLongitude,
+              }}
+              onPress={(e) => {
+                const { latitude, longitude } = e.nativeEvent.coordinate;
+                reverseGeocodeMapPress(latitude, longitude);
+              }}
+            >
+              <Marker
+                coordinate={{
+                  latitude: currentForm.locationLatitude,
+                  longitude: currentForm.locationLongitude,
+                }}
+              />
+            </MapView>
+          </View>
+        </View>
+
+        <View
+          onLayout={(event) =>
+            registerFieldPosition("reservationNumber", event.nativeEvent.layout.y)
+          }
+        >
+          <Text style={styles.label}>Reservation Number</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="Optional"
+            placeholderTextColor="#B8B8B8"
+            value={currentForm.reservationNumber}
+            onChangeText={(text) => updateCurrentForm({ reservationNumber: text })}
+            onFocus={() => setTimeout(() => scrollToField("reservationNumber"), 120)}
+          />
+        </View>
+
+        <View
+          onLayout={(event) =>
+            registerFieldPosition("time", event.nativeEvent.layout.y)
+          }
+        >
+          <Text style={styles.label}>Time</Text>
+          <Pressable style={styles.timeButton} onPress={() => setShowTimePicker(true)}>
+            <Text style={styles.timeButtonText}>{formatTime(currentForm.timeValue)}</Text>
+            <Ionicons name="time-outline" size={20} color={TEXT} />
+          </Pressable>
+
+          {showTimePicker && (
+            <DateTimePicker
+              value={currentForm.timeValue}
+              mode="time"
+              is24Hour={false}
+              display="default"
+              onChange={(event, selectedDate) => {
+                setShowTimePicker(false);
+                if (selectedDate) {
+                  const next = new Date(currentForm.timeValue);
+                  next.setHours(selectedDate.getHours());
+                  next.setMinutes(selectedDate.getMinutes());
+                  updateCurrentForm({ timeValue: next });
+                }
+              }}
+            />
+          )}
+        </View>
+
+        <View
+          onLayout={(event) =>
+            registerFieldPosition("price", event.nativeEvent.layout.y)
+          }
+        >
+          <View style={styles.priceHeader}>
+            <Text style={styles.priceLabel}>Price</Text>
+            <Text style={styles.priceValue}>${currentForm.price}</Text>
           </View>
 
-          <Pressable style={styles.cameraButton} onPress={onCameraPress}>
-            <Ionicons name="camera-outline" size={28} color={BLUE} />
-          </Pressable>
+          <View style={styles.priceRow}>
+            <View style={styles.sliderWrap}>
+              <Slider
+                style={{ width: "100%", height: 40 }}
+                minimumValue={0}
+                maximumValue={1000}
+                step={1}
+                value={currentForm.price}
+                minimumTrackTintColor={BLUE}
+                maximumTrackTintColor="#D5D5D5"
+                thumbTintColor={BLUE}
+                onValueChange={(value) => updateCurrentForm({ price: value })}
+              />
+            </View>
+
+            <Pressable style={styles.cameraButton} onPress={onCameraPress}>
+              <Ionicons name="camera-outline" size={28} color={BLUE} />
+            </Pressable>
+          </View>
         </View>
 
         {currentForm.attachments.length > 0 && (
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.attachmentsRow}>
-            {currentForm.attachments.map((item) => (
-              <View key={item.id} style={styles.attachmentCard}>
-                {item.type === "image" ? (
-                  <Image source={{ uri: item.uri }} style={styles.attachmentImage} />
-                ) : (
-                  <View style={styles.docPreview}>
-                    <Ionicons name="document-text-outline" size={28} color={BLUE} />
-                  </View>
-                )}
+          <View
+            onLayout={(event) =>
+              registerFieldPosition("attachments", event.nativeEvent.layout.y)
+            }
+          >
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.attachmentsRow}>
+              {currentForm.attachments.map((item) => (
+                <View key={item.id} style={styles.attachmentCard}>
+                  {item.type === "image" ? (
+                    <Image source={{ uri: item.uri }} style={styles.attachmentImage} />
+                  ) : (
+                    <View style={styles.docPreview}>
+                      <Ionicons name="document-text-outline" size={28} color={BLUE} />
+                    </View>
+                  )}
 
-                <Text numberOfLines={1} style={styles.attachmentName}>
-                  {typeof item.name === "string" ? item.name : "Attachment"}
-                </Text>
+                  <Text numberOfLines={1} style={styles.attachmentName}>
+                    {typeof item.name === "string" ? item.name : "Attachment"}
+                  </Text>
 
-                <Pressable
-                  style={styles.removeAttachmentButton}
-                  onPress={() => removeAttachment(item.id)}
-                >
-                  <Ionicons name="close-circle" size={20} color="#D9534F" />
-                </Pressable>
-              </View>
-            ))}
-          </ScrollView>
+                  <Pressable
+                    style={styles.removeAttachmentButton}
+                    onPress={() => removeAttachment(item.id)}
+                  >
+                    <Ionicons name="close-circle" size={20} color="#D9534F" />
+                  </Pressable>
+                </View>
+              ))}
+            </ScrollView>
+          </View>
         )}
 
-        <View style={styles.calendarCard}>
+        <View
+          style={styles.calendarCard}
+          onLayout={(event) =>
+            registerFieldPosition("calendar", event.nativeEvent.layout.y)
+          }
+        >
           <View style={styles.calendarTopRow}>
             <Pressable
               onPress={goPrevMonth}
@@ -1135,7 +1201,7 @@ export default function AddActivity() {
             {editingId ? "UPDATE!" : "ADD ALL ITEMS"}
           </Text>
         </Pressable>
-      </ScrollView>
+      </KeyboardAwareScrollView>
     </SafeAreaView>
   );
 }
@@ -1149,7 +1215,8 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: 20,
     paddingTop: 8,
-    paddingBottom: 28,
+    paddingBottom: 220,
+    flexGrow: 1,
   },
 
   loadingWrap: {
@@ -1282,26 +1349,6 @@ const styles = StyleSheet.create({
   },
 
   map: { flex: 1 },
-
-  locationWrap: {
-    height: 52,
-    borderWidth: 1.5,
-    borderColor: "#9FB2FF",
-    borderRadius: 26,
-    backgroundColor: "#EEF2FF",
-    paddingHorizontal: 14,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 14
-  },
-
-  locationInput: {
-    flex: 1,
-    fontSize: 15,
-    color: "#1F2937",
-    marginRight: 8
-  },
 
   timeButton: {
     height: 52,
