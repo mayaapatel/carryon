@@ -9,7 +9,9 @@ import {
   Alert,
   Dimensions,
   Image,
+  KeyboardAvoidingView,
   Modal,
+  Platform,
   Pressable,
   SafeAreaView,
   ScrollView,
@@ -18,8 +20,6 @@ import {
   Text,
   TextInput,
   View,
-  KeyboardAvoidingView,
-  Platform,
 } from "react-native";
 import {
   deleteTripItem,
@@ -43,6 +43,13 @@ const CATEGORIES = [
   { key: "food", label: "Food" },
   { key: "hotel", label: "Hotel" },
 ];
+
+function formatLocationForSave(location) {
+  if (!location) return "";
+  if (typeof location === "string") return location.trim();
+  // It's an object — keep it as-is
+  return location;
+}
 
 function buildDateFromItem(item) {
   const monthIndex = Math.max(0, MONTHS.indexOf(item?.month));
@@ -290,7 +297,7 @@ export default function TripItemDetails() {
         dateLabel: `${MONTHS[safeDate.getMonth()]} ${safeDate.getDate()}, ${safeDate.getFullYear()}`,
         timeLabel: formatTime(safeDate),
         description: (draft.description || "").trim(),
-        location: (draft.location || "").trim(),
+        location: formatLocationForSave(draft.location),
         reservationNumber: (draft.reservationNumber || "").trim(),
         attachments: finalAttachments,
       };
@@ -489,7 +496,7 @@ export default function TripItemDetails() {
         dateLabel: `${MONTHS[safeDate.getMonth()]} ${safeDate.getDate()}, ${safeDate.getFullYear()}`,
         timeLabel: formatTime(safeDate),
         description: (draft.description || "").trim(),
-        location: (draft.location || "").trim(),
+        location: formatLocationForSave(draft.location),
         reservationNumber: (draft.reservationNumber || "").trim(),
         attachments: nextAttachments,
       };
@@ -653,7 +660,19 @@ export default function TripItemDetails() {
 
             <View style={styles.summaryRow}>
               <Ionicons name="location-outline" size={16} color="#6B7280" />
-              <Text style={styles.summaryText}>{draft.location || "—"}</Text>
+              <Text style={styles.summaryText}>
+                {typeof draft.location === "object" && draft.location !== null
+                  ? [
+                      draft.location.street,
+                      draft.location.city,
+                      draft.location.state,
+                      draft.location.zip,
+                    ]
+                      .filter(Boolean)
+                      .map(String)
+                      .join(", ") || "—"
+                  : draft.location || "—"}
+              </Text>
             </View>
           </View>
 
@@ -719,7 +738,19 @@ export default function TripItemDetails() {
             </View>
 
             {!editingLocation ? (
-              <Text style={styles.infoValue}>{draft.location || "—"}</Text>
+              <Text style={styles.infoValue}>
+                {typeof draft.location === "object" && draft.location !== null
+                  ? [
+                      draft.location.street,
+                      draft.location.city,
+                      draft.location.state,
+                      draft.location.zip,
+                    ]
+                      .filter(Boolean)
+                      .map(String)
+                      .join(", ") || "—"
+                  : draft.location || "—"}
+              </Text>
             ) : (
               <>
                 <TextInput
