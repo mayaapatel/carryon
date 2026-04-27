@@ -520,16 +520,7 @@ const s = StyleSheet.create({
     paddingBottom: 10,
     backgroundColor: BG,
   },
-  iconButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#C9D7FF",
-    borderWidth: 1,
-    borderColor: BORDER,
-  },
+
   title: {
     fontSize: 22,
     fontWeight: "700",
