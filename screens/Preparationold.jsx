@@ -7,7 +7,6 @@ import {
   TouchableOpacity, View,
 } from "react-native";
 import { auth, db } from "../firebaseConfig";
-import AirportFlow from "../components/AirportFlow";
 
 const WMO = {
   0:["Clear sky","sunny-outline"], 1:["Mainly clear","partly-sunny-outline"],
@@ -71,7 +70,6 @@ const SECTIONS = {
   reservations: { title: "RESERVATIONS",      icon: "calendar-outline" },
   health:       { title: "HEALTH & SAFETY",   icon: "medical-outline" },
   weather:      { title: "WEATHER FORECAST",  icon: "partly-sunny-outline", noChecklist: true },
-  airportflow:  { title: "AIRPORT & FLIGHT TRACKER", icon: "airplane-outline", noChecklist: true },
 };
 
 export default function BeforeYouTravel() {
@@ -326,8 +324,6 @@ const { tripId, title } = useLocalSearchParams();
                     </>}
 
                     {isChecklist && key !== "documents" && <Checklist sectionKey={key} />}
-
-                    {key === "airportflow" && <AirportFlow />}
 
                     {key === "weather" && <>
                       {!destination && <Hint text="Loading weather from your trip destination..." />}
