@@ -48,8 +48,6 @@ export default function AirportFlow() {
   const [number, setNumber] = useState("");
   const [flight, setFlight] = useState(null);
   const [fetchedAt, setFetchedAt] = useState("");
-  const [precheck, setPrecheck] = useState(false);
-  const [checkedBag, setCheckedBag] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const requestId = useRef(0);
@@ -68,7 +66,7 @@ export default function AirportFlow() {
 
     try {
       const date = today();
-      const url = `https://${RAPID_API_HOST}/flights/number/${encodeURIComponent(n)}/${date}?withAircraftImage=false&withLocation=true`;
+      const url = `https://${RAPID_API_HOST}/flights/number/${encodeURIComponent(n)}/${date}?withAircraftImage=false&withLocation=false`;
       console.log(`[AirportFlow] direct request ${myRequest}: ${n} ${date}`);
 
       const response = await fetch(url, {
@@ -121,7 +119,6 @@ export default function AirportFlow() {
           gate: first(m.gate),
           checkIn: first(m.checkInDesk, m.checkIn),
           baggage: first(m.baggageBelt, m.baggageCarousel, m.baggage),
-          runwayTime: first(m.runwayTime?.local, m.runwayTimeLocal),
         };
       };
 
@@ -134,13 +131,8 @@ export default function AirportFlow() {
         status: first(selected.status, "Scheduled"),
         aircraft: first(selected.aircraft?.model, selected.aircraft?.type),
         aircraftRegistration: first(selected.aircraft?.reg, selected.aircraft?.registration),
-        aircraftModeS: first(selected.aircraft?.modeS),
-        callSign: first(selected.callSign),
-        codeshareStatus: first(selected.codeshareStatus),
-        isCargo: Boolean(selected.isCargo),
         departure: move(selected.departure),
         arrival: move(selected.arrival),
-        location: selected.location || null,
       });
       setFetchedAt(new Date().toISOString());
       setError("");
@@ -151,38 +143,6 @@ export default function AirportFlow() {
       if (myRequest === requestId.current) setLoading(false);
     }
   }
-
-  const fmt = (v) => {
-    if (!v) return "Not published";
-    const d = new Date(v);
-    if (Number.isNaN(d.getTime())) return String(v);
-    return `${d.toLocaleDateString([], { month: "short", day: "numeric" })} · ${d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}`;
-  };
-
-  const minsBetween = (a, b) => {
-    const x = new Date(a), y = new Date(b);
-    return Number.isNaN(x.getTime()) || Number.isNaN(y.getTime()) ? null : Math.round((y - x) / 60000);
-  };
-
-  const ordPlan = (() => {
-    if (!flight || flight.departure?.airport !== "ORD") return null;
-    const terminal = String(flight.departure?.terminal || "");
-    const gate = String(flight.departure?.gate || "").toUpperCase();
-    const checkpoints = {
-      "1": { regular: "CP1 / CP3", pre: "CP2", base: 9 },
-      "2": { regular: "CP5", pre: "CP5", base: 8 },
-      "3": { regular: "CP6 / CP7 / CP8", pre: "CP7A", base: 10 },
-      "5": { regular: "CP10", pre: "CP10", base: 12 },
-    };
-    const walks = { B: 8, C: 12, E: 8, F: 10, G: 9, H: 11, K: 13, L: 15, M: 10 };
-    const cfg = checkpoints[terminal] || { regular: "Nearest open checkpoint", pre: "Nearest PreCheck checkpoint", base: 11 };
-    const security = Math.max(3, Math.round(cfg.base * (precheck ? 0.58 : 1.18)));
-    const walk = walks[gate.charAt(0)] || 12;
-    const bag = checkedBag ? 12 : 0;
-    const total = bag + security + walk + 22 + 15;
-    const departureTime = flight.departure?.estimatedTime || flight.departure?.scheduledTime;
-    return { terminal: terminal || "Unknown", checkpoint: precheck ? cfg.pre : cfg.regular, security, walk, bag, total, departureTime };
-  })();
 
   return (
     <View style={s.wrap}>
@@ -247,63 +207,6 @@ export default function AirportFlow() {
           <AirportCard title="Departure" data={flight.departure} />
           <AirportCard title="Arrival" data={flight.arrival} />
 
-          <View style={s.card}>
-            <Text style={s.cardTitle}>More flight data · provider</Text>
-            <Row label="Call sign" value={flight.callSign} />
-            <Row label="Codeshare status" value={flight.codeshareStatus} />
-            <Row label="Cargo flight" value={flight.isCargo ? "Yes" : "No"} />
-            <Row label="Mode-S" value={flight.aircraftModeS} />
-            {flight.location ? <>
-              <Row label="Latitude" value={flight.location.lat} />
-              <Row label="Longitude" value={flight.location.lon} />
-              <Row label="Altitude" value={flight.location.altitude?.feet || flight.location.altitude} />
-              <Row label="Ground speed" value={flight.location.groundSpeed?.kt || flight.location.groundSpeed} />
-              <Row label="Track" value={flight.location.track?.deg || flight.location.track} />
-            </> : null}
-          </View>
-
-          {ordPlan ? (
-            <View style={s.card}>
-              <Text style={s.cardTitle}>AirportFlow · ORD modeled plan</Text>
-              <Text style={s.modelNote}>MODELED — estimates below are not TSA or airline-reported live waits.</Text>
-
-              <View style={s.optionRow}>
-                <Text style={s.optionText}>TSA PreCheck</Text>
-                <TouchableOpacity style={[s.optionButton, precheck && s.optionButtonOn]} onPress={() => setPrecheck(v => !v)}>
-                  <Text style={[s.optionButtonText, precheck && s.optionButtonTextOn]}>{precheck ? "YES" : "NO"}</Text>
-                </TouchableOpacity>
-              </View>
-              <View style={s.optionRow}>
-                <Text style={s.optionText}>Checking a bag</Text>
-                <TouchableOpacity style={[s.optionButton, checkedBag && s.optionButtonOn]} onPress={() => setCheckedBag(v => !v)}>
-                  <Text style={[s.optionButtonText, checkedBag && s.optionButtonTextOn]}>{checkedBag ? "YES" : "NO"}</Text>
-                </TouchableOpacity>
-              </View>
-
-              <Row label="Terminal" value={ordPlan.terminal} />
-              <Row label="Suggested checkpoint" value={ordPlan.checkpoint} />
-              <Row label="Bag drop" value={checkedBag ? `~${ordPlan.bag} min` : "Skipped"} />
-              <Row label={precheck ? "PreCheck estimate" : "Security estimate"} value={`~${ordPlan.security} min`} />
-              <Row label={`Walk to gate ${flight.departure?.gate || ""}`} value={`~${ordPlan.walk} min`} />
-              <Row label="Boarding process" value="~22 min" />
-              <Row label="Safety buffer" value="~15 min" />
-              <View style={s.modelTotal}>
-                <Text style={s.modelTotalLabel}>MODELED AIRPORT PROCESS</Text>
-                <Text style={s.modelTotalValue}>~{ordPlan.total} min</Text>
-              </View>
-            </View>
-          ) : (
-            <View style={s.card}>
-              <Text style={s.cardTitle}>AirportFlow forecasting</Text>
-              <Text style={s.modelNote}>Airport congestion forecasting is currently enabled for ORD departures. Provider flight details still work for other airports.</Text>
-            </View>
-          )}
-
-          <View style={s.card}>
-            <Text style={s.cardTitle}>Data transparency</Text>
-            <Text style={s.modelNote}>Provider fields come from AeroDataBox/RapidAPI when available. AirportFlow estimates are labeled MODELED. Missing live fields are not invented.</Text>
-          </View>
-
           {!!fetchedAt && (
             <Text style={s.updated}>
               Updated {new Date(fetchedAt).toLocaleString()}
@@ -339,14 +242,4 @@ const s = StyleSheet.create({
   label:{fontSize:12,color:"#6B7280"},
   value:{flex:1,textAlign:"right",fontSize:12,fontWeight:"700",color:"#1F2937"},
   updated:{fontSize:10,color:"#8A94A6",textAlign:"right"},
-  optionRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingVertical: 6 },
-  optionText: { fontSize: 11, fontWeight: "700", color: "#1F2937" },
-  optionButton: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 999, backgroundColor: "#DCE6FF" },
-  optionButtonOn: { backgroundColor: "#3F63F3" },
-  optionButtonText: { fontSize: 9, fontWeight: "900", color: "#3F63F3" },
-  optionButtonTextOn: { color: "#FFFFFF" },
-  modelTotal: { marginTop: 9, padding: 10, borderRadius: 10, backgroundColor: "#DCE6FF" },
-  modelTotalLabel: { fontSize: 8, fontWeight: "900", letterSpacing: 0.7, color: "#3F63F3" },
-  modelTotalValue: { fontSize: 21, fontWeight: "900", color: "#1F2937", marginTop: 2 },
-  modelNote: { fontSize: 10.5, lineHeight: 15, color: "#6B7280", marginBottom: 7 },
 });
