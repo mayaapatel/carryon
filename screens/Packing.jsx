@@ -7,9 +7,11 @@ import { doc, getDoc, setDoc } from "firebase/firestore";
 import { useEffect, useMemo, useState } from "react";
 
 import {
+
   ActivityIndicator, Alert, Modal, SafeAreaView, ScrollView, StyleSheet,
 
   Text, TextInput, TouchableOpacity, View
+
 } from "react-native";
 
 import { auth, db } from "../firebaseConfig";
@@ -17,20 +19,25 @@ import { auth, db } from "../firebaseConfig";
 import { CATEGORIES, buildPackingList, defaultSettings, tripDays } from "../utils/packingEngine";
 
 
-console.log("PACKING COMPONENT CHECK:", {
-  Ionicons: typeof Ionicons,
-  SafeAreaView: typeof SafeAreaView,
-  ScrollView: typeof ScrollView,
-  View: typeof View,
-  Text: typeof Text,
-  TouchableOpacity: typeof TouchableOpacity,
-  Modal: typeof Modal,
-  ActivityIndicator: typeof ActivityIndicator,
-  TextInput: typeof TextInput,
-});
 
 
-const PACKING_VERSION=1;
+
+const PACKING_VERSION=2;
+
+// Custom items live at the user level so future trips inherit them.
+const preferencesRef = (userId) => doc(db, "users", userId, "packingPreferences", "customItems");
+const normalizedName = (name) => name.trim().toLocaleLowerCase();
+const uniqueCustomItems = (items) => {
+  const seen = new Set();
+  return items.filter((entry) => {
+    if (!entry?.name?.trim()) return false;
+    const key = normalizedName(entry.name);
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+};
+
 
 const uid=()=>`${Date.now()}_${Math.random().toString(36).slice(2,8)}`;
 
@@ -128,6 +135,13 @@ export default function Packing() {
 
 
     const ps=await getDoc(doc(db,"users",u.uid,"trips",String(tripId),"preparation","packing")).catch(()=>null);
+    // Only new trip lists inherit account-wide custom items.
+    // Existing trip lists remain independent.
+    let rememberedItems=[];
+    if (!ps?.exists()) {
+      const prefSnap=await getDoc(preferencesRef(u.uid));
+      rememberedItems=Array.isArray(prefSnap.data()?.items) ? prefSnap.data().items : [];
+    }
 
     if(ps?.exists()){
 
@@ -141,7 +155,12 @@ export default function Packing() {
 
       const defaults=defaultSettings();
 
-      const initial=buildPackingList(days,defaults);
+      const initial=[...buildPackingList(days,defaults),
+        ...uniqueCustomItems(rememberedItems).map(x=>({
+          id:x.id || `custom_${uid()}`, name:x.name, category:x.category || "personal",
+          qty:Math.max(1,Number(x.qty)||1), unit:"", reason:"Remembered from a past trip",
+          packed:false,custom:true
+        }))];
 
       setSettings(defaults); setItems(initial);
 
@@ -193,14 +212,28 @@ export default function Packing() {
 
   ]);
 
-  const addItem=()=>{
-
+  const addItem=async()=>{
     const name=newName.trim(); if(!name)return;
-
-    const next=[...items,{id:`custom_${uid()}`,name,category:newCategory,qty:Math.max(1,Number(newQty)||1),unit:"",reason:"Added by you",packed:false,custom:true}];
-
-    setItems(next);save(next,settings);setNewName("");setNewQty("1");setAddOpen(false);
-
+    const existing=items.some(x=>normalizedName(x.name)===normalizedName(name));
+    if(existing){Alert.alert("Already on your list", "This item is already in your packing list.");return;}
+    const added={id:`custom_${uid()}`,name,category:newCategory,qty:Math.max(1,Number(newQty)||1),unit:"",reason:"Added by you",packed:false,custom:true};
+    const next=[...items,added];
+    setItems(next);setNewName("");setNewQty("1");setAddOpen(false);
+    try {
+      await save(next,settings);
+      const user=auth.currentUser;
+      if (!user) return;
+      const prefRef=preferencesRef(user.uid);
+      const snapshot=await getDoc(prefRef);
+      const remembered=Array.isArray(snapshot.data()?.items)?snapshot.data().items:[];
+      const updated=uniqueCustomItems([...remembered,{
+        id:added.id,name:added.name,category:added.category,qty:added.qty
+      }]);
+      await setDoc(prefRef,{items:updated,updatedAt:new Date().toISOString()},{merge:true});
+    } catch(error) {
+      console.error("Saving custom packing item failed:",error);
+      Alert.alert("Save failed", "The item was added to this screen, but may not appear on future trips. Please check your connection.");
+    }
   };
 
   const regenerate=()=>{
