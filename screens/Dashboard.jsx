@@ -357,9 +357,31 @@ export default function Dashboard() {
           </View>
         )}
 
+
+{/* CARRYON LENS BUTTON */}
+<TouchableOpacity
+  onPress={() => router.push("/lens")}
+  style={styles.createBtn}
+  activeOpacity={0.9}
+>
+  <View style={styles.lensButtonContent}>
+    <Ionicons
+      name="scan-outline"
+      size={20}
+      color="#FFFFFF"
+    />
+    <Text style={styles.createBtnText}>
+      Explore with Lens
+    </Text>
+  </View>
+</TouchableOpacity>
+
+
+
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>All Current / Upcoming Trips</Text>
         </View>
+        
 
         {loadingTrips ? (
           <View style={styles.tripsState}>
@@ -551,6 +573,14 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#B4C6FF",
   },
+
+lensButtonContent: {
+  flexDirection: "row",
+  alignItems: "center",
+  justifyContent: "center",
+  gap: 10,
+},
+
 
   titleWrap: {
     alignItems: "center",
@@ -850,4 +880,80 @@ const styles = StyleSheet.create({
     fontSize: 15,
     letterSpacing: 0.8,
   },
+
+lensCard: {
+  marginTop: 18,
+  marginBottom: 4,
+  backgroundColor: "#3F63F3",
+  borderRadius: 18,
+  padding: 18,
+  shadowColor: "#3F63F3",
+  shadowOffset: { width: 0, height: 5 },
+  shadowOpacity: 0.2,
+  shadowRadius: 10,
+  elevation: 5,
+},
+
+lensTopRow: {
+  flexDirection: "row",
+  alignItems: "center",
+  gap: 12,
+},
+
+lensIconContainer: {
+  width: 55,
+  height: 55,
+  borderRadius: 16,
+  backgroundColor: "#6681FF",
+  alignItems: "center",
+  justifyContent: "center",
+},
+
+lensTextContainer: {
+  flex: 1,
+},
+
+lensTitleRow: {
+  flexDirection: "row",
+  alignItems: "center",
+  gap: 7,
+},
+
+lensTitle: {
+  color: "#FFFFFF",
+  fontSize: 19,
+  fontWeight: "800",
+},
+
+lensTagline: {
+  color: "#E4EAFF",
+  fontSize: 13,
+  fontWeight: "700",
+  marginTop: 4,
+},
+
+lensDescription: {
+  color: "#E4EAFF",
+  fontSize: 12,
+  lineHeight: 18,
+  marginTop: 5,
+},
+
+lensExploreButton: {
+  marginTop: 17,
+  backgroundColor: "#FFFFFF",
+  borderRadius: 11,
+  paddingVertical: 12,
+  flexDirection: "row",
+  alignItems: "center",
+  justifyContent: "center",
+  gap: 8,
+},
+
+lensExploreText: {
+  color: "#3F63F3",
+  fontSize: 14,
+  fontWeight: "700",
+},
+
 });

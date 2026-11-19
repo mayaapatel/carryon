@@ -3,24 +3,32 @@ import DateTimePicker from "@react-native-community/datetimepicker";
 import Slider from "@react-native-community/slider";
 import * as DocumentPicker from "expo-document-picker";
 import * as ImagePicker from "expo-image-picker";
+import * as Notifications from "expo-notifications";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { doc, getDoc } from "firebase/firestore";
+import { collection, doc, getDoc } from "firebase/firestore";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import {
   Alert,
   Image,
+  Platform,
   Pressable,
   SafeAreaView,
   ScrollView,
   StatusBar,
   StyleSheet,
+  Switch,
   Text,
   TextInput,
   View,
 } from "react-native";
+import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import MapView, { Marker } from "react-native-maps";
 import { auth, db } from "../firebaseConfig";
+import {
+  cancelActivityReminder,
+  requestReminderPermission,
+  scheduleActivityReminder,
+} from "../utils/reservationReminders";
 import {
   formatTime,
   getTripItemById,
@@ -58,6 +66,8 @@ function createEmptyForm() {
     locationLatitude: 37.7749,
     locationLongitude: -122.4194,
     reservationNumber: "",
+    reminderEnabled: false,
+    reminderMinutes: 30,
     price: 50,
     monthIndex: 0,
     yearIndex: 1,
@@ -127,6 +137,7 @@ export default function AddActivity() {
   const [category, setCategory] = useState("activity");
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [loadingEditData, setLoadingEditData] = useState(false);
+  const [savingItems, setSavingItems] = useState(false);
   const [tripStartDate, setTripStartDate] = useState(null);
   const [tripEndDate, setTripEndDate] = useState(null);
   const [tripTitle, setTripTitle] = useState(initialTripTitle);
@@ -238,6 +249,8 @@ export default function AddActivity() {
             locationLatitude: loc.latitude || 37.7749,
             locationLongitude: loc.longitude || -122.4194,
             reservationNumber: item.reservationNumber || "",
+            reminderEnabled: item.reminderEnabled === true,
+            reminderMinutes: item.reminderMinutes ?? 30,
             price: item.price ?? 50,
             monthIndex: mIndex >= 0 ? mIndex : 0,
             yearIndex: yIndex >= 0 ? yIndex : 1,
@@ -723,6 +736,8 @@ export default function AddActivity() {
         longitude: form.locationLongitude,
       },
       reservationNumber: form.reservationNumber.trim(),
+      reminderEnabled: form.reminderEnabled === true,
+      reminderMinutes: form.reminderMinutes ?? 30,
       price: form.price,
       month,
       year,
@@ -735,72 +750,198 @@ export default function AddActivity() {
     };
   }
 
+  // The itinerary stores local date/time fields. This converts them to a
+  // Date in the device's current timezone. Destination timezone support
+  // should be added for trips across time zones.
+  function getActivityDate(form) {
+    return new Date(
+      YEARS[form.yearIndex],
+      form.monthIndex,
+      form.selectedDay,
+      form.timeValue.getHours(),
+      form.timeValue.getMinutes(),
+      0
+    );
+  }
+
+async function updateDeviceReminder(item, form) {
+  const userId = auth.currentUser?.uid;
+
+  if (!userId || !item.id) {
+    throw new Error(
+      "Missing user or activity ID for reminder."
+    );
+  }
+
+  const location = [
+    form.locationStreet,
+    form.locationCity,
+  ]
+    .filter(Boolean)
+    .join(", ");
+
+  // Step 1: Remove old reminders for this activity
+  await cancelActivityReminder(
+    sourceTripId,
+    item.id,
+    userId
+  );
+
+  // Step 2: If reminders are disabled, stop here
+  if (!form.reminderEnabled) {
+    console.log("Reminder disabled:", item.description);
+    return;
+  }
+
+  // Step 3: Schedule the new reminder
+  const notificationId = await scheduleActivityReminder({
+    tripId: sourceTripId,
+    activityId: item.id,
+    userId,
+    title: item.description,
+    location,
+    activityDate: getActivityDate(form),
+    minutesBefore: Number(form.reminderMinutes),
+  });
+
+  // Step 4: Verify the notification still exists
+  const scheduled =
+    await Notifications.getAllScheduledNotificationsAsync();
+
+  const exists = scheduled.some(
+    (notification) =>
+      notification.identifier === notificationId
+  );
+
+  console.log("REMINDER VERIFICATION:", {
+    activity: item.description,
+    notificationId,
+    exists,
+    totalScheduled: scheduled.length,
+  });
+
+  if (!exists) {
+    throw new Error(
+      "The reminder was created but is no longer scheduled."
+    );
+  }
+
+  return notificationId;
+}
+
+
   async function onAddAllItems() {
+    if (savingItems) return;
     if (!tripId || !sourceTripId || !sourceTripOwnerId) {
       Alert.alert("Error", "Missing trip information.");
       return;
     }
 
-    if (editingId) {
-      if (!currentForm.description.trim()) {
-        Alert.alert("Missing description", "Please enter a description.");
-        return;
-      }
+    const entries = editingId
+      ? [[category, currentForm]]
+      : Object.entries(tabForms).filter(([, form]) => isFilled(form));
 
-      const item = buildItemFromForm(category, currentForm, editingId);
-
-      try {
-        await upsertTripItem(sourceTripId, item, sourceTripOwnerId);
-
-        router.replace({
-          pathname: "/tripitinerary",
-          params: {
-            tripId,
-            sourceTripId,
-            sourceTripOwnerId,
-            title: tripTitle,
-          },
-        });
-      } catch (error) {
-        console.log("Update item error:", error);
-        Alert.alert("Error", error.message || "Could not update item.");
-      }
-      return;
-    }
-
-    const filledEntries = Object.entries(tabForms).filter(([, form]) => isFilled(form));
-
-    if (filledEntries.length === 0) {
+    if (!entries.length) {
       Alert.alert("Nothing to save", "Fill in at least one tab first.");
       return;
     }
-
-    const invalidEntry = filledEntries.find(([, form]) => !form.description.trim());
-    if (invalidEntry) {
-      Alert.alert("Missing description", "Any tab you use needs a description before saving.");
+    if (entries.some(([, form]) => !form.description.trim())) {
+      Alert.alert("Missing description", "Every activity needs a description.");
       return;
     }
 
+    for (const [, form] of entries) {
+      if (!form.reminderEnabled) continue;
+      const reminderAt = getActivityDate(form).getTime() -
+        Number(form.reminderMinutes) * 60000;
+      if (!Number.isFinite(reminderAt) || reminderAt <= Date.now()) {
+        Alert.alert(
+          "Invalid reminder time",
+          `The reminder for "${form.description}" would occur in the past. Choose a later date or shorter reminder.`
+        );
+        return;
+      }
+    }
+
+    if (entries.some(([, form]) => form.reminderEnabled)) {
+      try {
+        const allowed = await requestReminderPermission();
+        if (!allowed) {
+          Alert.alert(
+            "Notifications disabled",
+            "Allow notifications in your phone settings to enable reminders."
+          );
+          return;
+        }
+      } catch (error) {
+        Alert.alert("Notifications unavailable", error.message);
+        return;
+      }
+    }
+
+    setSavingItems(true);
+    let savedCount = 0;
+    const reminderFailures = [];
+
     try {
-      for (const [categoryKey, form] of filledEntries) {
-        const item = buildItemFromForm(categoryKey, form);
+      for (const [categoryKey, form] of entries) {
+        // Use a Firestore-generated ID so notification and activity identities match.
+        // upsertTripItem must preserve item.id; verify this in utils/tripStorage.
+        const itemId = editingId || doc(collection(
+          db, "users", sourceTripOwnerId, "trips", sourceTripId, "items"
+        )).id;
+        const item = buildItemFromForm(categoryKey, form, itemId);
+
         await upsertTripItem(sourceTripId, item, sourceTripOwnerId);
+        savedCount += 1;
+
+
+try {
+  await updateDeviceReminder(item, form);
+
+  console.log("REMINDER SUCCESS:", {
+    activity: item.description,
+    enabled: form.reminderEnabled,
+    minutesBefore: form.reminderMinutes,
+    date: getActivityDate(form).toString(),
+  });
+
+} catch (error) {
+  console.log("REMINDER FAILED:", error);
+
+  Alert.alert(
+    "Reminder Failed",
+    error?.message || String(error)
+  );
+
+  reminderFailures.push(item.description);
+}
       }
 
-      resetAllForms();
 
-      router.replace({
+      const navigateBack = () => router.replace({
         pathname: "/tripitinerary",
-        params: {
-          tripId,
-          sourceTripId,
-          sourceTripOwnerId,
-          title: tripTitle,
-        },
+        params: { tripId, sourceTripId, sourceTripOwnerId, title: tripTitle },
       });
+
+      resetAllForms();
+      if (reminderFailures.length) {
+        Alert.alert(
+          "Activities saved",
+          `${savedCount} item(s) saved, but reminders could not be updated for: ${reminderFailures.join(", ")}. Edit those activities to retry.`,
+          [{ text: "OK", onPress: navigateBack }]
+        );
+      } else {
+        navigateBack();
+      }
     } catch (error) {
-      console.log("Add all items error:", error);
-      Alert.alert("Error", error.message || "Could not save trip items.");
+      console.log("Save activity error:", error);
+      Alert.alert(
+        "Save error",
+        `${savedCount} item(s) saved before an error occurred. ${error.message || "Please try again."}`
+      );
+    } finally {
+      setSavingItems(false);
     }
   }
 
@@ -1055,6 +1196,66 @@ export default function AddActivity() {
           )}
         </View>
 
+        <View style={styles.reminderCard}>
+          <View style={styles.reminderHeader}>
+            <View style={styles.reminderIcon}>
+              <Ionicons name="notifications-outline" size={22} color={BLUE} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.reminderTitle}>Reservation Reminder</Text>
+              <Text style={styles.reminderSubtitle}>
+                Get notified before this activity
+              </Text>
+            </View>
+            <Switch
+              value={currentForm.reminderEnabled}
+              onValueChange={(value) => updateCurrentForm({ reminderEnabled: value })}
+              trackColor={{ false: "#CBD5E1", true: "#AFC1FF" }}
+              thumbColor={currentForm.reminderEnabled ? BLUE : "#F4F4F5"}
+            />
+          </View>
+          {currentForm.reminderEnabled && (
+            <>
+              <View style={styles.reminderDivider} />
+              <Text style={styles.reminderLabel}>Remind me before</Text>
+              <View style={styles.reminderOptions}>
+                {[
+                  { label: "15 min", value: 15 },
+                  { label: "30 min", value: 30 },
+                  { label: "1 hour", value: 60 },
+                  { label: "2 hours", value: 120 },
+                  { label: "1 day", value: 1440 },
+                ].map((option) => {
+                  const selected = currentForm.reminderMinutes === option.value;
+                  return (
+                    <Pressable
+                      key={option.value}
+                      style={[
+                        styles.reminderOption,
+                        selected && styles.reminderOptionSelected,
+                      ]}
+                      onPress={() => updateCurrentForm({ reminderMinutes: option.value })}
+                    >
+                      <Text style={[
+                        styles.reminderOptionText,
+                        selected && styles.reminderOptionTextSelected,
+                      ]}>
+                        {option.label}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+              <View style={styles.reminderNote}>
+                <Ionicons name="information-circle-outline" size={18} color={BLUE} />
+                <Text style={styles.reminderNoteText}>
+                  CarryOn will schedule a notification on this phone before the activity.
+                </Text>
+              </View>
+            </>
+          )}
+        </View>
+
         <View
           onLayout={(event) =>
             registerFieldPosition("price", event.nativeEvent.layout.y)
@@ -1222,9 +1423,52 @@ export default function AddActivity() {
           ) : null}
         </View>
 
-        <Pressable style={styles.createButton} onPress={onAddAllItems}>
+        {/* Temporary diagnostic: verifies local notifications on this phone. */}
+        <Pressable
+          style={{ backgroundColor: "#2563EB", padding: 15, borderRadius: 12, marginBottom: 12 }}
+          onPress={async () => {
+            try {
+              const Notifications = await import("expo-notifications");
+              const permission = await requestReminderPermission();
+              if (!permission) {
+                Alert.alert("Notifications disabled", "Allow notifications for Expo Go in your phone settings.");
+                return;
+              }
+              if (typeof Notifications.scheduleNotificationAsync !== "function") {
+                throw new Error("scheduleNotificationAsync is unavailable in this Expo runtime");
+              }
+              const id = await Notifications.scheduleNotificationAsync({
+                content: {
+                  title: "CarryOn Test ✈️",
+                  body: "Your phone notifications are working!",
+                  sound: "default",
+                },
+                trigger: {
+                  type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
+                  seconds: 10,
+                  ...(Platform.OS === "android" ? { channelId: "carryon-reservations" } : {}),
+                },
+              });
+              console.log("CarryOn test notification scheduled:", id);
+              Alert.alert("Test scheduled", "Lock your phone and wait 10 seconds.");
+            } catch (error) {
+              console.error("CarryOn test notification error:", error);
+              Alert.alert("Notification test failed", String(error?.message || error));
+            }
+          }}
+        >
+          <Text style={{ color: "white", textAlign: "center", fontWeight: "700" }}>
+            TEST NOTIFICATION (10 SECONDS)
+          </Text>
+        </Pressable>
+
+        <Pressable
+          style={[styles.createButton, savingItems && { opacity: 0.6 }]}
+          onPress={onAddAllItems}
+          disabled={savingItems}
+        >
           <Text style={styles.createButtonText}>
-            {editingId ? "UPDATE!" : "ADD ALL ITEMS"}
+            {savingItems ? "SAVING..." : editingId ? "UPDATE!" : "ADD ALL ITEMS"}
           </Text>
         </Pressable>
       </KeyboardAwareScrollView>
@@ -1233,6 +1477,33 @@ export default function AddActivity() {
 }
 
 const styles = StyleSheet.create({
+  reminderCard: {
+    backgroundColor: "#EEF2FF", borderWidth: 1.5, borderColor: BORDER,
+    borderRadius: 16, padding: 16, marginBottom: 18,
+  },
+  reminderHeader: { flexDirection: "row", alignItems: "center", gap: 12 },
+  reminderIcon: {
+    width: 42, height: 42, borderRadius: 12, backgroundColor: BG,
+    alignItems: "center", justifyContent: "center",
+  },
+  reminderTitle: { color: TEXT, fontSize: 16, fontWeight: "700" },
+  reminderSubtitle: { color: "#6B7280", fontSize: 12, marginTop: 4 },
+  reminderDivider: { height: 1, backgroundColor: "#C9D7FF", marginVertical: 16 },
+  reminderLabel: { fontSize: 14, fontWeight: "600", color: TEXT, marginBottom: 12 },
+  reminderOptions: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  reminderOption: {
+    backgroundColor: BG, borderWidth: 1, borderColor: BORDER,
+    paddingHorizontal: 13, paddingVertical: 10, borderRadius: 10,
+  },
+  reminderOptionSelected: { backgroundColor: BLUE, borderColor: BLUE },
+  reminderOptionText: { color: BLUE, fontSize: 13, fontWeight: "600" },
+  reminderOptionTextSelected: { color: "#FFFFFF" },
+  reminderNote: {
+    flexDirection: "row", alignItems: "flex-start", gap: 8,
+    backgroundColor: BG, padding: 12, borderRadius: 10, marginTop: 14,
+  },
+  reminderNoteText: { flex: 1, color: "#53617D", fontSize: 12, lineHeight: 18 },
+
   safeArea: {
     flex: 1,
     backgroundColor: "#DCE6FF"
